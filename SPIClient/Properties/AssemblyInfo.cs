@@ -32,7 +32,7 @@ using System.Runtime.InteropServices;
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("2.1.5.*")]
-[assembly: AssemblyInformationalVersion("2.1.4")]
+[assembly: AssemblyInformationalVersion("2.1.5")]
 
 
 // Let log4net know that it can look for configuration in the default application config file
