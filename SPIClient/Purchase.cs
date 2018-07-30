@@ -104,6 +104,11 @@ namespace SPIClient
         {
             return _m.GetDataIntValue("tip_amount");
         }
+
+        public int GetSurchargeAmount()
+        {
+            return _m.GetDataIntValue("surcharge_amount");
+        }
         
         public int GetCashoutAmount()
         {
@@ -218,7 +223,8 @@ namespace SPIClient
                 new JProperty("scheme_name", SchemeName),
                 new JProperty("terminal_id", GetTerminalId()),
                 new JProperty("terminal_ref_id", GetTerminalReferenceId()),
-                new JProperty("tip_amount", GetTipAmount())           
+                new JProperty("tip_amount", GetTipAmount()),
+                new JProperty("surcharge_amount", GetSurchargeAmount())
                 );
         }
     }
