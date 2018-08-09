@@ -33,8 +33,3 @@ using System.Runtime.InteropServices;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("2.1.6.*")]
 [assembly: AssemblyInformationalVersion("2.1.6")]
-
-
-// Let log4net know that it can look for configuration in the default application config file
-[assembly: log4net.Config.Repository("SPIClient")]
-[assembly: log4net.Config.XmlConfigurator(ConfigFile = "SPIClient.dll.config", Watch = true)]
