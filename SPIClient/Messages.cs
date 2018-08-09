@@ -231,9 +231,11 @@ namespace SPIClient
         public int GetDataIntValue(string attribute)
         {
             JToken v;
+            var value = 0;
+    
             var found = Data.TryGetValue(attribute, out v);
-            if (found) return (int) v;
-            return 0;
+            var parse = v != null && int.TryParse(v.ToString(), out value);
+            return found ? value : 0;
         }
 
         public bool GetDataBoolValue(string attribute, bool defaultIfNotFound)
