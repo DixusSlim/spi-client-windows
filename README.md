@@ -1,4 +1,4 @@
-# SPI Client Windows
+# SPI Client Windows [![Build status](https://ci.appveyor.com/api/projects/status/joflawbb90p1dv6j?svg=true)](https://ci.appveyor.com/project/AssemblyPayments/spi-client-windows)
 
 This is the Windows Client Library for Assembly Payments' In-Store Integration.
 
