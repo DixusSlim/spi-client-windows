@@ -296,7 +296,6 @@ namespace SPIClient
             {
                 case "PCOMP":
                     return _m.GetDataIntValue("completion_amount");
-                    break;
                 default:
                     return 0;
             }
