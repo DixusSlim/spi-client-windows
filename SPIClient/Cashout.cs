@@ -7,24 +7,28 @@ namespace SPIClient
     public class CashoutOnlyRequest
     {
         public string PosRefId { get; }
-        
-        public int CashoutAmount { get;}
-        
+
+        public int CashoutAmount { get; }
+
+        public int SurchargeAmount { get; }
+
         internal SpiConfig Config = new SpiConfig();
 
         internal TransactionOptions Options = new TransactionOptions();
 
-        public CashoutOnlyRequest(int amountCents, string posRefId)
+        public CashoutOnlyRequest(int amountCents, string posRefId, int surchargeAmount)
         {
             PosRefId = posRefId;
             CashoutAmount = amountCents;
+            SurchargeAmount = surchargeAmount;
         }
-        
+
         public Message ToMessage()
         {
             var data = new JObject(
                 new JProperty("pos_ref_id", PosRefId),
-                new JProperty("cash_amount", CashoutAmount)
+                new JProperty("cash_amount", CashoutAmount),
+                new JProperty("surcharge_amount", SurchargeAmount)
                 );
             Config.addReceiptConfig(data);
             Options.AddOptions(data);
@@ -44,7 +48,7 @@ namespace SPIClient
         public string RequestId { get; }
         public string PosRefId { get; }
         public string SchemeName { get; }
-       
+
         private readonly Message _m;
 
         /// <summary>
@@ -80,7 +84,7 @@ namespace SPIClient
         {
             return _m.GetDataIntValue("bank_cash_amount");
         }
-        
+
         public string GetCustomerReceipt()
         {
             return _m.GetDataStringValue("customer_receipt");
@@ -90,7 +94,7 @@ namespace SPIClient
         {
             return _m.GetDataStringValue("merchant_receipt");
         }
-        
+
         public string GetResponseText()
         {
             return _m.GetDataStringValue("host_response_text");
@@ -100,7 +104,7 @@ namespace SPIClient
         {
             return _m.GetDataStringValue("host_response_code");
         }
-        
+
         public string GetTerminalReferenceId()
         {
             return _m.GetDataStringValue("terminal_ref_id");
@@ -125,12 +129,12 @@ namespace SPIClient
         {
             return _m.GetDataStringValue("bank_time");
         }
-        
+
         public string GetMaskedPan()
         {
             return _m.GetDataStringValue("masked_pan");
         }
-        
+
         public string GetTerminalId()
         {
             return _m.GetDataStringValue("terminal_id");
@@ -145,7 +149,12 @@ namespace SPIClient
         {
             return _m.GetDataBoolValue("customer_receipt_printed", false);
         }
-        
+
+        public string GetSurchargeAmount()
+        {
+            return _m.GetDataStringValue("surcharge_amount");
+        }
+
         public string GetResponseValue(string attribute)
         {
             return _m.GetDataStringValue(attribute);

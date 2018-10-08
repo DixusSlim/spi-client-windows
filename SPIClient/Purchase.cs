@@ -13,6 +13,7 @@ namespace SPIClient
         public int TipAmount { get; set; }
         public int CashoutAmount { get; set; }
         public bool PromptForCashout { get; set; }
+        public int SurchargeAmount { get; set; }
 
         [Obsolete("Id is deprecated. Use PosRefId instead.")]
         public string Id { get; }
@@ -49,7 +50,8 @@ namespace SPIClient
                 new JProperty("purchase_amount", PurchaseAmount),
                 new JProperty("tip_amount", TipAmount),
                 new JProperty("cash_amount", CashoutAmount),
-                new JProperty("prompt_for_cashout", PromptForCashout)
+                new JProperty("prompt_for_cashout", PromptForCashout),
+                new JProperty("surcharge_amount", SurchargeAmount)
 
                 );
             Config.addReceiptConfig(data);
@@ -657,22 +659,25 @@ namespace SPIClient
     {
         public string PosRefId { get; }
         public int PurchaseAmount { get; }
+        public int SurchargeAmount { get; }
 
         internal SpiConfig Config = new SpiConfig();
 
         internal TransactionOptions Options = new TransactionOptions();
 
-        public MotoPurchaseRequest(int amountCents, string posRefId)
+        public MotoPurchaseRequest(int amountCents, string posRefId, int surchargeAmount)
         {
             PosRefId = posRefId;
             PurchaseAmount = amountCents;
+            SurchargeAmount = surchargeAmount;
         }
 
         public Message ToMessage()
         {
             var data = new JObject(
                 new JProperty("pos_ref_id", PosRefId),
-                new JProperty("purchase_amount", PurchaseAmount)
+                new JProperty("purchase_amount", PurchaseAmount),
+                new JProperty("surcharge_amount", SurchargeAmount)
             );
             Config.addReceiptConfig(data);
             Options.AddOptions(data);

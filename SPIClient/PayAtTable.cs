@@ -65,7 +65,7 @@ namespace SPIClient
 
             var bdArray = Convert.FromBase64String(BillData);
             var bdStr = Encoding.UTF8.GetString(bdArray);
-            var jsonSerializerSettings = new JsonSerializerSettings() {DateParseHandling = DateParseHandling.None};
+            var jsonSerializerSettings = new JsonSerializerSettings() { DateParseHandling = DateParseHandling.None };
             return JsonConvert.DeserializeObject<List<PaymentHistoryEntry>>(bdStr, jsonSerializerSettings);
         }
 
@@ -84,7 +84,7 @@ namespace SPIClient
         public Message ToMessage(string messageId)
         {
             var data = new JObject(
-                    new JProperty("success", Result==BillRetrievalResult.SUCCESS)
+                    new JProperty("success", Result == BillRetrievalResult.SUCCESS)
             );
 
             if (!string.IsNullOrWhiteSpace(BillId)) data.Add(new JProperty("bill_id", BillId));
@@ -127,11 +127,11 @@ namespace SPIClient
     [ClassInterface(ClassInterfaceType.AutoDual)]
     public class BillPayment
     {
-        public string BillId { get;}
-        public string TableId { get;}
-        public string OperatorId { get;}
+        public string BillId { get; }
+        public string TableId { get; }
+        public string OperatorId { get; }
 
-        public PaymentType PaymentType { get;}
+        public PaymentType PaymentType { get; }
 
         public int PurchaseAmount { get; }
         public int TipAmount { get; }
@@ -156,7 +156,7 @@ namespace SPIClient
             PaymentType = pt;
 
             // this is when we ply the sub object "payment_details" into a purchase response for convenience.
-            var purchaseMsg = new Message(m.Id, "payment_details", (JObject) m.Data.GetValue("payment_details"), false);
+            var purchaseMsg = new Message(m.Id, "payment_details", (JObject)m.Data.GetValue("payment_details"), false);
             PurchaseResponse = new PurchaseResponse(purchaseMsg);
 
             PurchaseAmount = PurchaseResponse.GetPurchaseAmount();
@@ -237,7 +237,8 @@ namespace SPIClient
             return new Message(messageId, Events.PayAtTableSetTableConfig, data, true);
         }
 
-        internal static Message FeatureDisableMessage(string messageId){
+        internal static Message FeatureDisableMessage(string messageId)
+        {
             var data = new JObject(
                 new JProperty("pay_at_table_enabled", false)
             );
