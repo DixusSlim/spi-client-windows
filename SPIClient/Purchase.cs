@@ -421,6 +421,7 @@ namespace SPIClient
     {
         public int AmountCents { get; }
         public string PosRefId { get; }
+        public bool IsSuppressMerchantPassword { get; }
 
         internal SpiConfig Config = new SpiConfig();
 
@@ -429,10 +430,11 @@ namespace SPIClient
         [Obsolete("Id is deprecated. Use PosRefId instead.")]
         public string Id { get; }
 
-        public RefundRequest(int amountCents, string posRefId)
+        public RefundRequest(int amountCents, string posRefId, bool isSuppressMerchantPassword)
         {
             AmountCents = amountCents;
             PosRefId = posRefId;
+            IsSuppressMerchantPassword = isSuppressMerchantPassword;
             Id = RequestIdHelper.Id("refund");
         }
 
@@ -440,7 +442,8 @@ namespace SPIClient
         {
             var data = new JObject(
                 new JProperty("refund_amount", AmountCents),
-                new JProperty("pos_ref_id", PosRefId)
+                new JProperty("pos_ref_id", PosRefId),
+                new JProperty("suppress_merchant_password", IsSuppressMerchantPassword)
             );
             Config.addReceiptConfig(data);
             Options.AddOptions(data);

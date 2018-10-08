@@ -437,14 +437,14 @@ namespace SPIClient
         /// <param name="posRefId">Alphanumeric Identifier for your refund.</param>
         /// <param name="amountCents">Amount in Cents to charge</param>
         /// <returns>InitiateTxResult</returns>
-        public InitiateTxResult InitiateRefundTx(string posRefId, int amountCents)
+        public InitiateTxResult InitiateRefundTx(string posRefId, int amountCents, bool isSuppressMerchantPassword)
         {
             if (CurrentStatus == SpiStatus.Unpaired) return new InitiateTxResult(false, "Not Paired");
 
             lock (_txLock)
             {
                 if (CurrentFlow != SpiFlow.Idle) return new InitiateTxResult(false, "Not Idle");
-                var refundRequest = PurchaseHelper.CreateRefundRequest(amountCents, posRefId);
+                var refundRequest = PurchaseHelper.CreateRefundRequest(amountCents, posRefId, isSuppressMerchantPassword);
                 refundRequest.Config = Config;
                 var refundMsg = refundRequest.ToMessage();
                 CurrentFlow = SpiFlow.Transaction;
