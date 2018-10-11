@@ -402,10 +402,43 @@ namespace SPIClient
         /// <param name="purchaseAmount">The Purchase Amount in Cents.</param>
         /// <param name="tipAmount">The Tip Amount in Cents</param>
         /// <param name="cashoutAmount">The Cashout Amount in Cents</param>
-        /// <param name="surchargeAmount">The Surcharge Amount in Cents</param>
         /// <param name="promptForCashout">Whether to prompt your customer for cashout on the Eftpos</param>
         /// <returns>InitiateTxResult</returns>
-        public InitiateTxResult InitiatePurchaseTxV2(string posRefId, int purchaseAmount, int tipAmount, int cashoutAmount, int surchargeAmount, bool promptForCashout, TransactionOptions options)
+        public InitiateTxResult InitiatePurchaseTxV2(string posRefId, int purchaseAmount, int tipAmount, int cashoutAmount, bool promptForCashout)
+        {
+            return InitiatePurchaseTxV2(posRefId, purchaseAmount, tipAmount, cashoutAmount, promptForCashout, null);
+        }
+
+        /// <summary>
+        /// Initiates a purchase transaction. Be subscribed to TxFlowStateChanged event to get updates on the process.
+        /// <para>Tip and cashout are not allowed simultaneously.</para>
+        /// </summary>
+        /// <param name="posRefId">An Unique Identifier for your Order/Purchase</param>
+        /// <param name="purchaseAmount">The Purchase Amount in Cents.</param>
+        /// <param name="tipAmount">The Tip Amount in Cents</param>
+        /// <param name="cashoutAmount">The Cashout Amount in Cents</param>
+        /// <param name="promptForCashout">Whether to prompt your customer for cashout on the Eftpos</param>
+        /// <param name="options">The Setting to set Header and Footer for the Receipt</param>
+        /// <returns>InitiateTxResult</returns>
+        public InitiateTxResult InitiatePurchaseTxV2(string posRefId, int purchaseAmount, int tipAmount, int cashoutAmount, bool promptForCashout, TransactionOptions options)
+        {
+            return InitiatePurchaseTxV2(posRefId, purchaseAmount, tipAmount, cashoutAmount, promptForCashout, options, 0);
+        }
+
+        /// <summary>
+        /// Initiates a purchase transaction. Be subscribed to TxFlowStateChanged event to get updates on the process.
+        /// <para>Tip and cashout are not allowed simultaneously.</para>
+        /// </summary>
+        /// <param name="posRefId">An Unique Identifier for your Order/Purchase</param>
+        /// <param name="purchaseAmount">The Purchase Amount in Cents.</param>
+        /// <param name="tipAmount">The Tip Amount in Cents</param>
+        /// <param name="cashoutAmount">The Cashout Amount in Cents</param>
+        /// <param name="surchargeAmount">The Surcharge Amount in Cents</param>
+        /// <param name="promptForCashout">Whether to prompt your customer for cashout on the Eftpos</param>
+        /// <param name="options">The Setting to set Header and Footer for the Receipt</param>
+        /// <param name="surchargeAmount">The Surcharge Amount in Cents</param>
+        /// <returns>InitiateTxResult</returns>
+        public InitiateTxResult InitiatePurchaseTxV2(string posRefId, int purchaseAmount, int tipAmount, int cashoutAmount, bool promptForCashout, TransactionOptions options, int surchargeAmount)
         {
             if (CurrentStatus == SpiStatus.Unpaired) return new InitiateTxResult(false, "Not Paired");
 
@@ -430,6 +463,17 @@ namespace SPIClient
             }
             _txFlowStateChanged(this, CurrentTxFlowState);
             return new InitiateTxResult(true, "Purchase Initiated");
+        }
+
+        /// <summary>
+        /// Initiates a refund transaction. Be subscribed to TxFlowStateChanged event to get updates on the process.
+        /// </summary>
+        /// <param name="posRefId">Alphanumeric Identifier for your refund.</param>
+        /// <param name="amountCents">Amount in Cents to charge</param>
+        /// <returns>InitiateTxResult</returns>
+        public InitiateTxResult InitiateRefundTx(string posRefId, int amountCents)
+        {
+            return InitiateRefundTx(posRefId, amountCents, false);
         }
 
         /// <summary>
