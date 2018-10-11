@@ -599,6 +599,17 @@ namespace SPIClient
         /// </summary>
         /// <param name="posRefId">Alphanumeric Identifier for your transaction.</param>
         /// <param name="amountCents">Amount in Cents to cash out</param>
+        /// <returns>InitiateTxResult</returns>
+        public InitiateTxResult InitiateCashoutOnlyTx(string posRefId, int amountCents)
+        {
+            return InitiateCashoutOnlyTx(posRefId, amountCents, 0);
+        }
+
+        /// <summary>
+        /// Initiates a cashout only transaction. Be subscribed to TxFlowStateChanged event to get updates on the process.
+        /// </summary>
+        /// <param name="posRefId">Alphanumeric Identifier for your transaction.</param>
+        /// <param name="amountCents">Amount in Cents to cash out</param>
         /// <param name="surchargeAmount">The Surcharge Amount in Cents</param>
         /// <returns>InitiateTxResult</returns>
         public InitiateTxResult InitiateCashoutOnlyTx(string posRefId, int amountCents, int surchargeAmount)
@@ -622,6 +633,17 @@ namespace SPIClient
             }
             _txFlowStateChanged(this, CurrentTxFlowState);
             return new InitiateTxResult(true, "Cashout Initiated");
+        }
+
+        /// <summary>
+        /// Initiates a Mail Order / Telephone Order Purchase Transaction
+        /// </summary>
+        /// <param name="posRefId">Alphanumeric Identifier for your transaction.</param>
+        /// <param name="amountCents">Amount in Cents</param>
+        /// <returns>InitiateTxResult</returns>
+        public InitiateTxResult InitiateMotoPurchaseTx(string posRefId, int amountCents)
+        {
+            return InitiateMotoPurchaseTx(posRefId, amountCents, 0);
         }
 
         /// <summary>
