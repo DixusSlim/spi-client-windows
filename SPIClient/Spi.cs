@@ -167,8 +167,18 @@ namespace SPIClient
             }
         }
 
+
         /// <summary>
-        /// Set the api key used for auto address discovery feature
+        /// Set the acquirer code of your bank, please contact Assembly's Integration Engineers for acquirer code.
+        /// </summary>
+        public bool SetAcquirerCode(string acquirerCode)
+        {
+            _acquirerCode = acquirerCode;
+            return true;
+        }
+
+        /// <summary>
+        /// Set the api key used for auto address discovery feature, please contact Assembly's Integration Engineers for Api key.
         /// </summary>
         /// <returns></returns>
         public bool SetDeviceApiKey(string deviceApiKey)
@@ -197,17 +207,18 @@ namespace SPIClient
         /// Allows you to set the auto address discovery feature. 
         /// </summary>
         /// <returns></returns>
-        public bool SetAutoAddressResolution(bool autoAddressResolution)
+        public bool SetAutoAddressResolution(bool autoAddressResolutionEnable)
         {
             if (CurrentStatus == SpiStatus.PairedConnected)
                 return false;
 
-            if (autoAddressResolution && !_autoAddressResolutionEnabled)
+            var was = _autoAddressResolutionEnabled;
+            if (autoAddressResolutionEnable && !_autoAddressResolutionEnabled)
             {
                 // we're turning it on
                 _autoResolveEftposAddress();
             }
-            _autoAddressResolutionEnabled = autoAddressResolution;
+            _autoAddressResolutionEnabled = autoAddressResolutionEnable;
             return true;
         }
 
@@ -1624,7 +1635,7 @@ namespace SPIClient
                 return;
 
             var service = new DeviceAddressService();
-            var addressResponse = await service.RetrieveService(_serialNumber, _deviceApiKey, _inTestMode);
+            var addressResponse = await service.RetrieveService(_serialNumber, _deviceApiKey, _acquirerCode, _inTestMode);
 
             if (addressResponse?.Address == null)
                 return;
@@ -1671,10 +1682,11 @@ namespace SPIClient
         private string _eftposAddress;
         private string _serialNumber;
         private string _deviceApiKey;
+        private string _acquirerCode;
         private bool _inTestMode;
         private bool _autoAddressResolutionEnabled;
         private Secrets _secrets;
-        private MessageStamp _spiMessageStamp;
+        private readonly MessageStamp _spiMessageStamp;
         
         private Connection _conn;
         private readonly TimeSpan _pongTimeout = TimeSpan.FromSeconds(5);

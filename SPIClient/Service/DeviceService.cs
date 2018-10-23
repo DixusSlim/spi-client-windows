@@ -16,11 +16,10 @@ namespace SPIClient.Service
     public class DeviceAddressService
     {
         private const string ApiKeyHeader = "ASM-MSP-DEVICE-ADDRESS-API-KEY";
-        private const string 
 
-        public async Task<DeviceAddressStatus> RetrieveService(string serialNumber, string apiKey, bool isTestMode)
+        public async Task<DeviceAddressStatus> RetrieveService(string serialNumber, string apiKey, string acquirerCode, bool isTestMode)
         {
-            var deviceAddressUri = isTestMode ? $"https://device-address-api-sb.wbc.msp.assemblypayments.com/v1/{serialNumber}/ip" : $"https://device-address-api.wbc.msp.assemblypayments.com/v1/{serialNumber}/ip";
+            var deviceAddressUri = isTestMode ? $"https://device-address-api-sb.wbc.{acquirerCode}.assemblypayments.com/v1/{serialNumber}/ip" : $"https://device-address-api.{acquirerCode}.msp.assemblypayments.com/v1/{serialNumber}/ip";
 
             var addressService = new HttpBaseService(deviceAddressUri);
             var request = new RestRequest(Method.GET);
