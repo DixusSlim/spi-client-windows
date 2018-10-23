@@ -185,10 +185,11 @@ namespace SPIClient
             if (CurrentStatus != SpiStatus.Unpaired)
                 return false;
 
-            if (_autoAddressResolutionEnabled && HasSerialNumberChanged(serialNumber))
-                _autoResolveEftposAddress();
-            
+            var was = _serialNumber;
             _serialNumber = serialNumber;
+            if (_autoAddressResolutionEnabled && HasSerialNumberChanged(was))
+                _autoResolveEftposAddress();
+
             return true;
         }
 
@@ -222,13 +223,12 @@ namespace SPIClient
             if (CurrentStatus != SpiStatus.Unpaired)
                 return false;
 
-            if (testMode != _inTestMode)
-            {
-                // we're changing mode
-                _autoResolveEftposAddress();
-            }
-            
+            if (testMode == _inTestMode)
+                return true;
+
+            // we're changing mode
             _inTestMode = testMode;
+            _autoResolveEftposAddress();
             return true;
         }
 
