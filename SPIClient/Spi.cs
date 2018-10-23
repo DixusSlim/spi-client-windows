@@ -213,12 +213,13 @@ namespace SPIClient
                 return false;
 
             var was = _autoAddressResolutionEnabled;
-            if (autoAddressResolutionEnable && !_autoAddressResolutionEnabled)
+            _autoAddressResolutionEnabled = autoAddressResolutionEnable;
+            if (autoAddressResolutionEnable && !was)
             {
                 // we're turning it on
                 _autoResolveEftposAddress();
             }
-            _autoAddressResolutionEnabled = autoAddressResolutionEnable;
+
             return true;
         }
 
