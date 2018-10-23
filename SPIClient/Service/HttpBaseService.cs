@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using log4net;
@@ -13,18 +14,19 @@ namespace SPIClient.Service
         public DataFormat DataFormat { get; set; }
         private string Url { get; }
         private IRestClient RestClient { get; set; }
+        private readonly TimeSpan _timeOut = TimeSpan.FromSeconds(3);
 
         public HttpBaseService(string url)
         {
             Url = url;
             DataFormat = DataFormat.Json;
             RestClient = new RestClient(url);
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12; // TODO: check this
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
         }
 
         public async Task<T> SendRequest<T>(IRestRequest request) where T : new()
         {
-            var cancellationTokenSource = new CancellationTokenSource();
+            var cancellationTokenSource = new CancellationTokenSource(_timeOut);
             var response = await RestClient.ExecuteTaskAsync<T>(request, cancellationTokenSource.Token);
 
             if (response.StatusCode != HttpStatusCode.OK)
