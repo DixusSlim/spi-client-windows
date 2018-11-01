@@ -846,7 +846,7 @@ namespace SPIClient
                 CurrentTxFlowState = new TransactionFlowState(
                     posRefId, TransactionType.GetLastTransaction, 0, gltRequestMsg,
                     $"Waiting for EFTPOS connection to make a Get-Last-Transaction request.");
-
+                CurrentTxFlowState.CallingGlt(gltRequestMsg.Id);
                 if (_send(gltRequestMsg))
                 {
                     CurrentTxFlowState.Sent($"Asked EFTPOS to Get Last Transaction.");
@@ -1274,10 +1274,22 @@ namespace SPIClient
                 var txState = CurrentTxFlowState;
                 if (CurrentFlow != SpiFlow.Transaction || txState.Finished)
                 {
-                    // We were not in the middle of a transaction, who cares?
+                    _log.Info($"Received glt response but we were not in the middle of a tx. ignoring.");
                     return;
                 }
 
+                if (!txState.AwaitingGltResponse)
+                {
+                    _log.Info($"received a glt response but we had not asked for one within this transaction. Perhaps leftover from previous one. ignoring.");
+                    return;
+                }
+
+                if (txState.LastGltRequestId != m.Id)
+                {
+                    _log.Info($"received a glt response but the message id does not match the glt request that we sent. strange. ignoring.");
+                    return;
+                }
+                
                 // TH-4 We were in the middle of a transaction.
                 // Let's attempt recovery. This is step 4 of Transaction Processing Handling
                 _log.Info($"Got Last Transaction..");
@@ -1421,7 +1433,6 @@ namespace SPIClient
                             {
                                 // TH-1T, TH-4T - It's been a while since we received an update, let's call a GLT
                                 _log.Info($"Checking on our transaction. Last we asked was at {state.LastStateRequestTime}...");
-                                txState.CallingGlt();
                                 _callGetLastTransaction();
                             }
                         }
@@ -1639,7 +1650,6 @@ namespace SPIClient
                     {
                         // TH-3A - We've just reconnected and were in the middle of Tx.
                         // Let's get the last transaction to check what we might have missed out on.
-                        CurrentTxFlowState.CallingGlt();
                         _callGetLastTransaction();
                     }
                     else
@@ -1730,8 +1740,9 @@ namespace SPIClient
         /// </summary>
         private void _callGetLastTransaction()
         {
-            var gltRequest = new GetLastTransactionRequest();
-            _send(gltRequest.ToMessage());
+            var gltRequestMsg = new GetLastTransactionRequest().ToMessage();
+            CurrentTxFlowState.CallingGlt(gltRequestMsg.Id);
+            _send(gltRequestMsg);
         }
 
         /// <summary>
