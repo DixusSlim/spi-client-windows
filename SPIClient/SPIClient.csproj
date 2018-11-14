@@ -90,7 +90,9 @@
     <Compile Include="PairingHelper.cs" />
     <Compile Include="PayAtTable.cs" />
     <Compile Include="PingHelper.cs" />
+    <Compile Include="PosInfo.cs" />
     <Compile Include="Preauth.cs" />
+    <Compile Include="Printing.cs" />
     <Compile Include="Purchase.cs" />
     <Compile Include="PurchaseHelper.cs" />
     <Compile Include="RequestIdHelper.cs" />
@@ -104,6 +106,7 @@
     <Compile Include="SpiModels.cs" />
     <Compile Include="SpiPayAtTable.cs" />
     <Compile Include="SpiPreauth.cs" />
+    <Compile Include="Terminal.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="App.config" />

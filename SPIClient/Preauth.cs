@@ -194,12 +194,14 @@ namespace SPIClient
         public string PreauthId { get; }
         public int CompletionAmount { get; }
         public string PosRefId { get; }
+        public int SurchargeAmount { get; }
 
-        public PreauthCompletionRequest(string preauthId, int completionAmountCents, string posRefId)
+        public PreauthCompletionRequest(string preauthId, int completionAmountCents, string posRefId, int surchargeAmount)
         {
             PreauthId = preauthId;
             CompletionAmount = completionAmountCents;
             PosRefId = posRefId;
+            SurchargeAmount = surchargeAmount;
         }
 
         public Message ToMessage()
@@ -207,7 +209,8 @@ namespace SPIClient
             var data = new JObject(
                 new JProperty("pos_ref_id", PosRefId),
                 new JProperty("preauth_id", PreauthId),
-                new JProperty("completion_amount", CompletionAmount)
+                new JProperty("completion_amount", CompletionAmount),
+                new JProperty("surcharge_amount", SurchargeAmount)
             );
 
             return new Message(RequestIdHelper.Id("prac"), PreauthEvents.PreauthCompleteRequest, data, true);
@@ -296,11 +299,22 @@ namespace SPIClient
             {
                 case "PCOMP":
                     return _m.GetDataIntValue("completion_amount");
-                    break;
                 default:
                     return 0;
             }
 
+        }
+
+        public int GetSurchargeAmount()
+        {
+            var txType = _m.GetDataStringValue("transaction_type");
+            switch (txType)
+            {
+                case "PCOMP":
+                    return _m.GetDataIntValue("surcharge_amount");
+                default:
+                    return 0;
+            }
         }
     }
 }

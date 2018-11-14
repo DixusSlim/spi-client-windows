@@ -18,7 +18,7 @@ namespace SPIClient
         /// <summary>
         /// This default stucture works for COM interop.
         /// </summary>
-        public SpiPreauth() { } 
+        public SpiPreauth() { }
 
         internal SpiPreauth(Spi spi, object txLock)
         {
@@ -35,7 +35,7 @@ namespace SPIClient
             var sentMsg = $"Asked EFTPOS to verify account";
             return _initiatePreauthTx(tfs, sentMsg);
         }
-        
+
         public InitiateTxResult InitiateOpenTx(string posRefId, int amountCents)
         {
             var msg = new PreauthOpenRequest(amountCents, posRefId).ToMessage();
@@ -76,9 +76,9 @@ namespace SPIClient
             return _initiatePreauthTx(tfs, sentMsg);
         }
 
-        public InitiateTxResult InitiateCompletionTx(string posRefId, string preauthId, int amountCents)
+        public InitiateTxResult InitiateCompletionTx(string posRefId, string preauthId, int amountCents, int surchargeAmount)
         {
-            var msg = new PreauthCompletionRequest(preauthId, amountCents, posRefId).ToMessage();
+            var msg = new PreauthCompletionRequest(preauthId, amountCents, posRefId, surchargeAmount).ToMessage();
             var tfs = new TransactionFlowState(
                 posRefId, TransactionType.Preauth, amountCents, msg,
                 $"Waiting for EFTPOS connection to make preauth completion request for ${amountCents / 100.0:.00}");
@@ -155,7 +155,7 @@ namespace SPIClient
             }
             _spi._txFlowStateChanged(this, _spi.CurrentTxFlowState);
         }
-        
+
         private void _handlePreauthResponse(Message m)
         {
             lock (_txLock)
