@@ -911,7 +911,7 @@ namespace SPIClient
             return GltMatch(gltResponse, posRefId);
         }
 
-        public void PrintReceipt(string key, string payload)
+        public void PrintReport(string key, string payload)
         {
             lock (_txLock)
             {
