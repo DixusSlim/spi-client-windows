@@ -7,21 +7,21 @@
             return new PurchaseRequest(amountCents, purchaseId);
         }
 
-        public static PurchaseRequest CreatePurchaseRequestV2(string posRefId, int purchaseAmount, int tipAmount, int cashoutAmount, bool promptForCashout)
+        public static PurchaseRequest CreatePurchaseRequestV2(string posRefId, int purchaseAmount, int tipAmount, int cashoutAmount, bool promptForCashout, int surchargeAmount)
         {
             var pr = new PurchaseRequest(purchaseAmount, posRefId)
             {
                 CashoutAmount = cashoutAmount,
                 TipAmount = tipAmount,
-                PromptForCashout = promptForCashout
+                PromptForCashout = promptForCashout,
+                SurchargeAmount = surchargeAmount
             };
             return pr;
         }
 
-        
-        public static RefundRequest CreateRefundRequest(int amountCents, string purchaseId)
+        public static RefundRequest CreateRefundRequest(int amountCents, string purchaseId, bool isSuppressMerchantPassword)
         {
-            return new RefundRequest(amountCents, purchaseId);
+            return new RefundRequest(amountCents, purchaseId, isSuppressMerchantPassword);
         }
 
     }
