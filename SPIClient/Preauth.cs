@@ -42,7 +42,6 @@ namespace SPIClient
             var data = new JObject(
                 new JProperty("pos_ref_id", PosRefId)
             );
-
             return new Message(RequestIdHelper.Id("prav"), PreauthEvents.AccountVerifyRequest, data, true);
         }
     }
@@ -78,6 +77,10 @@ namespace SPIClient
         public string PosRefId { get; }
         public int PreauthAmount { get; }
 
+        internal SpiConfig Config = new SpiConfig();
+
+        internal TransactionOptions Options = new TransactionOptions();
+
         public PreauthOpenRequest(int amountCents, string posRefId)
         {
             PosRefId = posRefId;
@@ -91,6 +94,11 @@ namespace SPIClient
                 new JProperty("preauth_amount", PreauthAmount)
             );
 
+            Config.EnabledPrintMerchantCopy = true;
+            Config.EnabledPromptForCustomerCopyOnEftpos = true;
+            Config.EnabledSignatureFlowOnEftpos = true;
+            Config.AddReceiptConfig(data);
+            Options.AddOptions(data);
             return new Message(RequestIdHelper.Id("prac"), PreauthEvents.PreauthOpenRequest, data, true);
         }
     }
@@ -100,6 +108,10 @@ namespace SPIClient
         public string PreauthId { get; }
         public int TopupAmount { get; }
         public string PosRefId { get; }
+
+        internal SpiConfig Config = new SpiConfig();
+
+        internal TransactionOptions Options = new TransactionOptions();
 
         public PreauthTopupRequest(string preauthId, int topupAmountCents, string posRefId)
         {
@@ -116,6 +128,11 @@ namespace SPIClient
                 new JProperty("topup_amount", TopupAmount)
             );
 
+            Config.EnabledPrintMerchantCopy = true;
+            Config.EnabledPromptForCustomerCopyOnEftpos = true;
+            Config.EnabledSignatureFlowOnEftpos = true;
+            Config.AddReceiptConfig(data);
+            Options.AddOptions(data);
             return new Message(RequestIdHelper.Id("prtu"), PreauthEvents.PreauthTopupRequest, data, true);
         }
     }
@@ -125,6 +142,10 @@ namespace SPIClient
         public string PreauthId { get; }
         public int PartialCancellationAmount { get; }
         public string PosRefId { get; }
+
+        internal SpiConfig Config = new SpiConfig();
+
+        internal TransactionOptions Options = new TransactionOptions();
 
         public PreauthPartialCancellationRequest(string preauthId, int partialCancellationAmountCents, string posRefId)
         {
@@ -141,6 +162,11 @@ namespace SPIClient
                 new JProperty("preauth_cancel_amount", PartialCancellationAmount)
             );
 
+            Config.EnabledPrintMerchantCopy = true;
+            Config.EnabledPromptForCustomerCopyOnEftpos = true;
+            Config.EnabledSignatureFlowOnEftpos = true;
+            Config.AddReceiptConfig(data);
+            Options.AddOptions(data);
             return new Message(RequestIdHelper.Id("prpc"), PreauthEvents.PreauthPartialCancellationRequest, data, true);
         }
     }
@@ -149,6 +175,10 @@ namespace SPIClient
     {
         public string PreauthId { get; }
         public string PosRefId { get; }
+
+        internal SpiConfig Config = new SpiConfig();
+
+        internal TransactionOptions Options = new TransactionOptions();
 
         public PreauthExtendRequest(string preauthId, string posRefId)
         {
@@ -163,6 +193,11 @@ namespace SPIClient
                 new JProperty("preauth_id", PreauthId)
             );
 
+            Config.EnabledPrintMerchantCopy = true;
+            Config.EnabledPromptForCustomerCopyOnEftpos = true;
+            Config.EnabledSignatureFlowOnEftpos = true;
+            Config.AddReceiptConfig(data);
+            Options.AddOptions(data);
             return new Message(RequestIdHelper.Id("prext"), PreauthEvents.PreauthExtendRequest, data, true);
         }
     }
@@ -171,6 +206,10 @@ namespace SPIClient
     {
         public string PreauthId { get; }
         public string PosRefId { get; }
+
+        internal SpiConfig Config = new SpiConfig();
+
+        internal TransactionOptions Options = new TransactionOptions();
 
         public PreauthCancelRequest(string preauthId, string posRefId)
         {
@@ -185,6 +224,11 @@ namespace SPIClient
                 new JProperty("preauth_id", PreauthId)
             );
 
+            Config.EnabledPrintMerchantCopy = true;
+            Config.EnabledPromptForCustomerCopyOnEftpos = true;
+            Config.EnabledSignatureFlowOnEftpos = true;
+            Config.AddReceiptConfig(data);
+            Options.AddOptions(data);
             return new Message(RequestIdHelper.Id("prac"), PreauthEvents.PreauthCancellationRequest, data, true);
         }
     }
@@ -194,14 +238,17 @@ namespace SPIClient
         public string PreauthId { get; }
         public int CompletionAmount { get; }
         public string PosRefId { get; }
-        public int SurchargeAmount { get; }
+        public int SurchargeAmount { get; set; }
 
-        public PreauthCompletionRequest(string preauthId, int completionAmountCents, string posRefId, int surchargeAmount)
+        internal SpiConfig Config = new SpiConfig();
+
+        internal TransactionOptions Options = new TransactionOptions();
+
+        public PreauthCompletionRequest(string preauthId, int completionAmountCents, string posRefId)
         {
             PreauthId = preauthId;
             CompletionAmount = completionAmountCents;
             PosRefId = posRefId;
-            SurchargeAmount = surchargeAmount;
         }
 
         public Message ToMessage()
@@ -213,6 +260,11 @@ namespace SPIClient
                 new JProperty("surcharge_amount", SurchargeAmount)
             );
 
+            Config.EnabledPrintMerchantCopy = true;
+            Config.EnabledPromptForCustomerCopyOnEftpos = true;
+            Config.EnabledSignatureFlowOnEftpos = true;
+            Config.AddReceiptConfig(data);
+            Options.AddOptions(data);
             return new Message(RequestIdHelper.Id("prac"), PreauthEvents.PreauthCompleteRequest, data, true);
         }
     }
@@ -315,6 +367,16 @@ namespace SPIClient
                 default:
                     return 0;
             }
+        }
+
+        public bool WasMerchantReceiptPrinted()
+        {
+            return _m.GetDataBoolValue("merchant_receipt_printed", false);
+        }
+
+        public bool WasCustomerReceiptPrinted()
+        {
+            return _m.GetDataBoolValue("customer_receipt_printed", false);
         }
     }
 }

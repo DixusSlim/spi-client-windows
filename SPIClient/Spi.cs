@@ -587,15 +587,29 @@ namespace SPIClient
         /// <param name="amountCents">Amount in Cents to charge</param>
         /// <param name="isSuppressMerchantPassword">Merchant Password control in VAA</param>
         /// <returns>InitiateTxResult</returns>
-        public InitiateTxResult InitiateRefundTx(string posRefId, int amountCents, bool isSuppressMerchantPassword)
+        public InitiateTxResult InitiateRefundTx(string posRefId, int amountCents, bool suppressMerchantPassword)
+        {
+            return InitiateRefundTx(posRefId, amountCents, suppressMerchantPassword, new TransactionOptions());
+        }
+
+        /// <summary>
+        /// Initiates a refund transaction. Be subscribed to TxFlowStateChanged event to get updates on the process.
+        /// </summary>
+        /// <param name="posRefId">Alphanumeric Identifier for your refund.</param>
+        /// <param name="amountCents">Amount in Cents to charge</param>
+        /// <param name="suppressMerchantPassword">Merchant Password control in VAA</param>
+        /// <param name="options">The Setting to set Header and Footer for the Receipt</param>
+        /// <returns>InitiateTxResult</returns>
+        public InitiateTxResult InitiateRefundTx(string posRefId, int amountCents, bool suppressMerchantPassword, TransactionOptions options)
         {
             if (CurrentStatus == SpiStatus.Unpaired) return new InitiateTxResult(false, "Not Paired");
 
             lock (_txLock)
             {
                 if (CurrentFlow != SpiFlow.Idle) return new InitiateTxResult(false, "Not Idle");
-                var refundRequest = PurchaseHelper.CreateRefundRequest(amountCents, posRefId, isSuppressMerchantPassword);
+                var refundRequest = PurchaseHelper.CreateRefundRequest(amountCents, posRefId, suppressMerchantPassword);
                 refundRequest.Config = Config;
+                refundRequest.Options = options;
                 var refundMsg = refundRequest.ToMessage();
                 CurrentFlow = SpiFlow.Transaction;
                 CurrentTxFlowState = new TransactionFlowState(
@@ -718,14 +732,31 @@ namespace SPIClient
         /// <returns>InitiateTxResult</returns>
         public InitiateTxResult InitiateCashoutOnlyTx(string posRefId, int amountCents, int surchargeAmount)
         {
+            return InitiateCashoutOnlyTx(posRefId, amountCents, surchargeAmount, new TransactionOptions());
+        }
+
+        /// <summary>
+        /// Initiates a cashout only transaction. Be subscribed to TxFlowStateChanged event to get updates on the process.
+        /// </summary>
+        /// <param name="posRefId">Alphanumeric Identifier for your transaction.</param>
+        /// <param name="amountCents">Amount in Cents to cash out</param>
+        /// <param name="surchargeAmount">The Surcharge Amount in Cents</param>
+        /// <param name="options">The Setting to set Header and Footer for the Receipt</param>
+        /// <returns>InitiateTxResult</returns>
+        public InitiateTxResult InitiateCashoutOnlyTx(string posRefId, int amountCents, int surchargeAmount, TransactionOptions options)
+        {
             if (CurrentStatus == SpiStatus.Unpaired) return new InitiateTxResult(false, "Not Paired");
 
             lock (_txLock)
             {
                 if (CurrentFlow != SpiFlow.Idle) return new InitiateTxResult(false, "Not Idle");
-                var cashoutOnlyRequest = new CashoutOnlyRequest(amountCents, posRefId, surchargeAmount);
-                cashoutOnlyRequest.Config = Config;
-                var cashoutMsg = cashoutOnlyRequest.ToMessage();
+                var cashoutMsg = new CashoutOnlyRequest(amountCents, posRefId)
+                {
+                    SurchargeAmount = surchargeAmount,
+                    Options = options,
+                    Config = Config
+                }.ToMessage();
+
                 CurrentFlow = SpiFlow.Transaction;
                 CurrentTxFlowState = new TransactionFlowState(
                     posRefId, TransactionType.CashoutOnly, amountCents, cashoutMsg,
@@ -759,19 +790,51 @@ namespace SPIClient
         /// <returns>InitiateTxResult</returns>
         public InitiateTxResult InitiateMotoPurchaseTx(string posRefId, int amountCents, int surchargeAmount)
         {
+            return InitiateMotoPurchaseTx(posRefId, amountCents, surchargeAmount, false);
+        }
+
+        /// <summary>
+        /// Initiates a Mail Order / Telephone Order Purchase Transaction
+        /// </summary>
+        /// <param name="posRefId">Alphanumeric Identifier for your transaction.</param>
+        /// <param name="amountCents">Amount in Cents</param>
+        /// <param name="surchargeAmount">The Surcharge Amount in Cents</param>
+        /// <param name="isSuppressMerchantPassword">>Merchant Password control in VAA</param>
+        /// <returns>InitiateTxResult</returns>
+        public InitiateTxResult InitiateMotoPurchaseTx(string posRefId, int amountCents, int surchargeAmount, bool suppressMerchantPassword)
+        {
+            return InitiateMotoPurchaseTx(posRefId, amountCents, surchargeAmount, suppressMerchantPassword, new TransactionOptions());
+        }
+
+        /// <summary>
+        /// Initiates a Mail Order / Telephone Order Purchase Transaction
+        /// </summary>
+        /// <param name="posRefId">Alphanumeric Identifier for your transaction.</param>
+        /// <param name="amountCents">Amount in Cents</param>
+        /// <param name="surchargeAmount">The Surcharge Amount in Cents</param>
+        /// <param name="isSuppressMerchantPassword">>Merchant Password control in VAA</param>
+        /// <param name="options">The Setting to set Header and Footer for the Receipt</param>
+        /// <returns>InitiateTxResult</returns>
+        public InitiateTxResult InitiateMotoPurchaseTx(string posRefId, int amountCents, int surchargeAmount, bool suppressMerchantPassword, TransactionOptions options)
+        {
             if (CurrentStatus == SpiStatus.Unpaired) return new InitiateTxResult(false, "Not Paired");
 
             lock (_txLock)
             {
                 if (CurrentFlow != SpiFlow.Idle) return new InitiateTxResult(false, "Not Idle");
-                var motoPurchaseRequest = new MotoPurchaseRequest(amountCents, posRefId, surchargeAmount);
-                motoPurchaseRequest.Config = Config;
-                var cashoutMsg = motoPurchaseRequest.ToMessage();
+                var motoPurchaseMsg = new MotoPurchaseRequest(amountCents, posRefId)
+                {
+                    SurchargeAmount = surchargeAmount,
+                    SuppressMerchantPassword = suppressMerchantPassword,
+                    Config = Config,
+                    Options = options
+                }.ToMessage();
+
                 CurrentFlow = SpiFlow.Transaction;
                 CurrentTxFlowState = new TransactionFlowState(
-                    posRefId, TransactionType.MOTO, amountCents, cashoutMsg,
+                    posRefId, TransactionType.MOTO, amountCents, motoPurchaseMsg,
                     $"Waiting for EFTPOS connection to send MOTO request for ${amountCents / 100.0:.00}");
-                if (_send(cashoutMsg))
+                if (_send(motoPurchaseMsg))
                 {
                     CurrentTxFlowState.Sent($"Asked EFTPOS do MOTO for ${amountCents / 100.0:.00}");
                 }
@@ -786,17 +849,32 @@ namespace SPIClient
         /// </summary>
         public InitiateTxResult InitiateSettleTx(string posRefId)
         {
+            return InitiateSettleTx(posRefId, new TransactionOptions());
+        }
+
+        /// <summary>
+        /// Initiates a settlement transaction.
+        /// Be subscribed to TxFlowStateChanged event to get updates on the process.
+        /// <param name="options">The Setting to set Header and Footer for the Receipt</param>
+        /// </summary>
+        public InitiateTxResult InitiateSettleTx(string posRefId, TransactionOptions options)
+        {
             if (CurrentStatus == SpiStatus.Unpaired) return new InitiateTxResult(false, "Not Paired");
 
             lock (_txLock)
             {
                 if (CurrentFlow != SpiFlow.Idle) return new InitiateTxResult(false, "Not Idle");
-                var settleRequestMsg = new SettleRequest(RequestIdHelper.Id("settle")).ToMessage();
+                var settleMsg = new SettleRequest(RequestIdHelper.Id("settle"))
+                {
+                    Config = Config,
+                    Options = options
+                }.ToMessage();
+
                 CurrentFlow = SpiFlow.Transaction;
                 CurrentTxFlowState = new TransactionFlowState(
-                    posRefId, TransactionType.Settle, 0, settleRequestMsg,
+                    posRefId, TransactionType.Settle, 0, settleMsg,
                     $"Waiting for EFTPOS connection to make a settle request");
-                if (_send(settleRequestMsg))
+                if (_send(settleMsg))
                 {
                     CurrentTxFlowState.Sent($"Asked EFTPOS to settle.");
                 }
@@ -809,12 +887,25 @@ namespace SPIClient
         /// </summary>
         public InitiateTxResult InitiateSettlementEnquiry(string posRefId)
         {
+            return InitiateSettlementEnquiry(posRefId, new TransactionOptions());
+        }
+
+        /// <summary>
+        /// <param name="options">The Setting to set Header and Footer for the Receipt</param>
+        /// </summary>
+        public InitiateTxResult InitiateSettlementEnquiry(string posRefId, TransactionOptions options)
+        {
             if (CurrentStatus == SpiStatus.Unpaired) return new InitiateTxResult(false, "Not Paired");
 
             lock (_txLock)
             {
                 if (CurrentFlow != SpiFlow.Idle) return new InitiateTxResult(false, "Not Idle");
-                var stlEnqMsg = new SettlementEnquiryRequest(RequestIdHelper.Id("stlenq")).ToMessage();
+                var stlEnqMsg = new SettlementEnquiryRequest(RequestIdHelper.Id("stlenq"))
+                {
+                    Config = Config,
+                    Options = options
+                }.ToMessage();
+
                 CurrentFlow = SpiFlow.Transaction;
                 CurrentTxFlowState = new TransactionFlowState(
                     posRefId, TransactionType.SettlementEnquiry, 0, stlEnqMsg,
@@ -1290,7 +1381,7 @@ namespace SPIClient
                     _log.Info($"received a glt response but the message id does not match the glt request that we sent. strange. ignoring.");
                     return;
                 }
-                
+
                 // TH-4 We were in the middle of a transaction.
                 // Let's attempt recovery. This is step 4 of Transaction Processing Handling
                 _log.Info($"Got Last Transaction..");
@@ -1833,6 +1924,12 @@ namespace SPIClient
                     break;
                 case Events.PayAtTableBillPayment:
                     _spiPat?._handleBillPaymentAdvice(m);
+                    break;
+                case Events.PayAtTableGetOpenTables:
+                    _spiPat?._handleGetOpenTablesRequest(m);
+                    break;
+                case Events.PayAtTableBillPaymentFlowEnded:
+                    _spiPat?._handleBillPaymentFlowEnded(m);
                     break;
                 case Events.PrintingResponse:
                     _handlePrintingResponse(m);

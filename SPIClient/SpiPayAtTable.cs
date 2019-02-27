@@ -1,13 +1,16 @@
 ﻿using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using Newtonsoft.Json.Linq;
 
 namespace SPIClient
 {
 
-    public delegate BillStatusResponse PayAtTableGetBillStatus(string billId, string tableId, string operatorId);
+    public delegate BillStatusResponse PayAtTableGetBillStatus(string billId, string tableId, string operatorId, bool paymentFlowStarted);
 
     public delegate BillStatusResponse PayAtTableBillPaymentReceived(BillPayment billPayment, string updatedBillData);
+
+    public delegate GetOpenTablesResponse PayAtTableGetOpenTables(string operatorId);
+
+    public delegate void PayAtTableBillPaymentFlowEnded(Message message);
 
     /// <summary>
     /// These attributes work for COM interop.
@@ -35,6 +38,10 @@ namespace SPIClient
         public PayAtTableGetBillStatus GetBillStatus;
 
         public PayAtTableBillPaymentReceived BillPaymentReceived;
+
+        public PayAtTableGetOpenTables GetOpenTables;
+
+        public PayAtTableBillPaymentFlowEnded BillPaymentFlowEnded;
 
         /// <summary>
         /// This default stucture works for COM interop.
@@ -69,9 +76,10 @@ namespace SPIClient
         {
             var operatorId = m.GetDataStringValue("operator_id");
             var tableId = m.GetDataStringValue("table_id");
+            var paymentFlowStarted = m.GetDataBoolValue("payment_flow_started", false);
 
             // Ask POS for Bill Details for this tableId, inluding encoded PaymentData
-            var billStatus = GetBillStatus("", tableId, operatorId);
+            var billStatus = GetBillStatus("", tableId, operatorId, paymentFlowStarted);
             billStatus.TableId = tableId;
             if (billStatus.TotalAmount <= 0)
             {
@@ -87,7 +95,7 @@ namespace SPIClient
             var billPayment = new BillPayment(m);
 
             // Ask POS for Bill Details, inluding encoded PaymentData
-            var existingBillStatus = GetBillStatus(billPayment.BillId, billPayment.TableId, billPayment.OperatorId);
+            var existingBillStatus = GetBillStatus(billPayment.BillId, billPayment.TableId, billPayment.OperatorId, billPayment.PaymentFlowStarted);
             if (existingBillStatus.Result != BillRetrievalResult.SUCCESS)
             {
                 _log.Warn("Could not retrieve Bill Status for Payment Advice. Sending Error to Eftpos.");
@@ -141,6 +149,25 @@ namespace SPIClient
         internal void _handleGetTableConfig(Message m)
         {
             _spi._send(Config.ToMessage(m.Id));
+        }
+
+        internal void _handleGetOpenTablesRequest(Message m)
+        {
+            var operatorId = m.GetDataStringValue("operator_id");
+
+            // Ask POS for Bill Details for this tableId, inluding encoded PaymentData
+            var openTablesResponse = GetOpenTables(operatorId);
+            if (openTablesResponse.TableData.Length <= 0)
+            {
+                _log.Info("There is no open table.");
+            }
+
+            _spi._send(openTablesResponse.ToMessage(m.Id));
+        }
+
+        internal void _handleBillPaymentFlowEnded(Message m)
+        {
+            BillPaymentFlowEnded(m);
         }
 
         private static readonly log4net.ILog _log = log4net.LogManager.GetLogger("spipat");

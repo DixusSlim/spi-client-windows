@@ -14,6 +14,7 @@ namespace SPIClient
     {
         private readonly Spi _spi;
         private readonly object _txLock;
+        public readonly SpiConfig Config = new SpiConfig();
 
         /// <summary>
         /// This default stucture works for COM interop.
@@ -29,6 +30,7 @@ namespace SPIClient
         public InitiateTxResult InitiateAccountVerifyTx(string posRefId)
         {
             var verifyMsg = new AccountVerifyRequest(posRefId).ToMessage();
+
             var tfs = new TransactionFlowState(
                 posRefId, TransactionType.AccountVerify, 0, verifyMsg,
                 $"Waiting for EFTPOS connection to make account verify request");
@@ -38,7 +40,17 @@ namespace SPIClient
 
         public InitiateTxResult InitiateOpenTx(string posRefId, int amountCents)
         {
-            var msg = new PreauthOpenRequest(amountCents, posRefId).ToMessage();
+            return InitiateOpenTx(posRefId, amountCents, new TransactionOptions());
+        }
+
+        public InitiateTxResult InitiateOpenTx(string posRefId, int amountCents, TransactionOptions options)
+        {
+            var msg = new PreauthOpenRequest(amountCents, posRefId)
+            {
+                Config = Config,
+                Options = options
+            }.ToMessage();
+
             var tfs = new TransactionFlowState(
                 posRefId, TransactionType.Preauth, amountCents, msg,
                 $"Waiting for EFTPOS connection to make preauth request for ${amountCents / 100.0:.00}");
@@ -48,7 +60,17 @@ namespace SPIClient
 
         public InitiateTxResult InitiateTopupTx(string posRefId, string preauthId, int amountCents)
         {
-            var msg = new PreauthTopupRequest(preauthId, amountCents, posRefId).ToMessage();
+            return InitiateTopupTx(posRefId, preauthId, amountCents, new TransactionOptions());
+        }
+
+        public InitiateTxResult InitiateTopupTx(string posRefId, string preauthId, int amountCents, TransactionOptions options)
+        {
+            var msg = new PreauthTopupRequest(preauthId, amountCents, posRefId)
+            {
+                Config = Config,
+                Options = options
+            }.ToMessage();
+
             var tfs = new TransactionFlowState(
                 posRefId, TransactionType.Preauth, amountCents, msg,
                 $"Waiting for EFTPOS connection to make preauth topup request for ${amountCents / 100.0:.00}");
@@ -58,7 +80,17 @@ namespace SPIClient
 
         public InitiateTxResult InitiatePartialCancellationTx(string posRefId, string preauthId, int amountCents)
         {
-            var msg = new PreauthPartialCancellationRequest(preauthId, amountCents, posRefId).ToMessage();
+            return InitiatePartialCancellationTx(posRefId, preauthId, amountCents, new TransactionOptions());
+        }
+
+        public InitiateTxResult InitiatePartialCancellationTx(string posRefId, string preauthId, int amountCents, TransactionOptions options)
+        {
+            var msg = new PreauthPartialCancellationRequest(preauthId, amountCents, posRefId)
+            {
+                Config = Config,
+                Options = options
+            }.ToMessage();
+
             var tfs = new TransactionFlowState(
                 posRefId, TransactionType.Preauth, amountCents, msg,
                 $"Waiting for EFTPOS connection to make preauth partial cancellation request for ${amountCents / 100.0:.00}");
@@ -68,7 +100,17 @@ namespace SPIClient
 
         public InitiateTxResult InitiateExtendTx(string posRefId, string preauthId)
         {
-            var msg = new PreauthExtendRequest(preauthId, posRefId).ToMessage();
+            return InitiateExtendTx(posRefId, preauthId, new TransactionOptions());
+        }
+
+        public InitiateTxResult InitiateExtendTx(string posRefId, string preauthId, TransactionOptions options)
+        {
+            var msg = new PreauthExtendRequest(preauthId, posRefId)
+            {
+                Config = Config,
+                Options = options
+            }.ToMessage();
+
             var tfs = new TransactionFlowState(
                 posRefId, TransactionType.Preauth, 0, msg,
                 $"Waiting for EFTPOS connection to make preauth Extend request");
@@ -83,7 +125,18 @@ namespace SPIClient
 
         public InitiateTxResult InitiateCompletionTx(string posRefId, string preauthId, int amountCents, int surchargeAmount)
         {
-            var msg = new PreauthCompletionRequest(preauthId, amountCents, posRefId, surchargeAmount).ToMessage();
+            return InitiateCompletionTx(posRefId, preauthId, amountCents, surchargeAmount, new TransactionOptions());
+        }
+
+        public InitiateTxResult InitiateCompletionTx(string posRefId, string preauthId, int amountCents, int surchargeAmount, TransactionOptions options)
+        {
+            var msg = new PreauthCompletionRequest(preauthId, amountCents, posRefId)
+            {
+                Config = Config,
+                SurchargeAmount = surchargeAmount,
+                Options = options
+            }.ToMessage();
+
             var tfs = new TransactionFlowState(
                 posRefId, TransactionType.Preauth, amountCents, msg,
                 $"Waiting for EFTPOS connection to make preauth completion request for ${amountCents / 100.0:.00}");
@@ -93,7 +146,17 @@ namespace SPIClient
 
         public InitiateTxResult InitiateCancelTx(string posRefId, string preauthId)
         {
-            var msg = new PreauthCancelRequest(preauthId, posRefId).ToMessage();
+            return InitiateCancelTx(posRefId, preauthId, new TransactionOptions());
+        }
+
+        public InitiateTxResult InitiateCancelTx(string posRefId, string preauthId, TransactionOptions options)
+        {
+            var msg = new PreauthCancelRequest(preauthId, posRefId)
+            {
+                Config = Config,
+                Options = options
+            }.ToMessage();
+
             var tfs = new TransactionFlowState(
                 posRefId, TransactionType.Preauth, 0, msg,
                 $"Waiting for EFTPOS connection to make preauth cancellation request");

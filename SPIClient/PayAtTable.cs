@@ -39,6 +39,8 @@ namespace SPIClient
         /// </summary>
         public string TableId { get; set; }
 
+        public string OperatorId { get; set; }
+
         /// <summary>
         /// The Total Amount on this bill, in cents.
         /// </summary>
@@ -130,6 +132,7 @@ namespace SPIClient
         public string BillId { get; }
         public string TableId { get; }
         public string OperatorId { get; }
+        public bool PaymentFlowStarted { get; }
 
         public PaymentType PaymentType { get; }
 
@@ -251,5 +254,73 @@ namespace SPIClient
         public PayAtTableConfig() { }
     }
 
+    public class GetOpenTablesResponse
+    {
+        /// <summary>
+        /// Your POS is required to persist some state on behalf of the Eftpos so the Eftpos can recover state.
+        /// It is just a piece of string that you save against your operatorId.
+        /// Whenever you're asked for OpenTables, make sure you return this piece of data if you have it.
+        /// </summary>
+        public string TableData { get; set; }
 
+        internal List<OpenTablesEntry> GetOpenTables()
+        {
+            if (string.IsNullOrWhiteSpace(TableData))
+            {
+                return new List<OpenTablesEntry>();
+            }
+
+            var bdArray = Convert.FromBase64String(TableData);
+            var bdStr = Encoding.UTF8.GetString(bdArray);
+            var jsonSerializerSettings = new JsonSerializerSettings() { DateParseHandling = DateParseHandling.None };
+            return JsonConvert.DeserializeObject<List<OpenTablesEntry>>(bdStr, jsonSerializerSettings);
+        }
+
+        public Message ToMessage(string messageId)
+        {
+            var data = new JObject(new JProperty("tables", JToken.FromObject(GetOpenTables())));
+            return new Message(messageId, Events.PayAtTableOpenTables, data, true);
+        }
+    }
+
+    public class OpenTablesEntry
+    {
+        [JsonProperty("table_id")]
+        public string TableId;
+
+        [JsonProperty("label")]
+        public string Label;
+
+        [JsonProperty("bill_outstanding_amount")]
+        public int BillOutstandingAmount;
+
+        [JsonConstructor()]
+        public OpenTablesEntry() { }
+    }
+
+    public class BillPaymentFlowEndedResponse
+    {
+        public string BillId { get; }
+        public int BillOutstandingAmount { get; }
+        public int BillTotalAmount { get; }
+        public string TableId { get; }
+        public string OperatorId { get; }
+        public int CardTotalCount { get; }
+        public int CardTotalAmount { get; }
+        public int CashTotalCount { get; }
+        public int CashTotalAmount { get; }
+
+        public BillPaymentFlowEndedResponse(Message m)
+        {
+            BillId = m.GetDataStringValue("bill_id");
+            BillOutstandingAmount = m.GetDataIntValue("bill_outstanding_amount");
+            BillTotalAmount = m.GetDataIntValue("bill_total_amount");
+            OperatorId = m.GetDataStringValue("operator_id");
+            TableId = m.GetDataStringValue("table_id");
+            CardTotalCount = m.GetDataIntValue("card_total_count");
+            CardTotalAmount = m.GetDataIntValue("card_total_amount");
+            CashTotalCount = m.GetDataIntValue("cash_total_count");
+            CashTotalAmount = m.GetDataIntValue("cash_total_amount");
+        }
+    }
 }

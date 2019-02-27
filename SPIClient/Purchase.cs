@@ -54,7 +54,11 @@ namespace SPIClient
                 new JProperty("surcharge_amount", SurchargeAmount)
 
                 );
-            Config.addReceiptConfig(data);
+
+            Config.EnabledPrintMerchantCopy = true;
+            Config.EnabledPromptForCustomerCopyOnEftpos = true;
+            Config.EnabledSignatureFlowOnEftpos = true;
+            Config.AddReceiptConfig(data);
             Options.AddOptions(data);
             return new Message(RequestIdHelper.Id("prchs"), Events.PurchaseRequest, data, true);
         }
@@ -428,18 +432,20 @@ namespace SPIClient
     {
         public int AmountCents { get; }
         public string PosRefId { get; }
-        public bool IsSuppressMerchantPassword { get; }
+        public bool SuppressMerchantPassword { get; }
 
         internal SpiConfig Config = new SpiConfig();
+
+        internal TransactionOptions Options = new TransactionOptions();
 
         [Obsolete("Id is deprecated. Use PosRefId instead.")]
         public string Id { get; }
 
-        public RefundRequest(int amountCents, string posRefId, bool isSuppressMerchantPassword)
+        public RefundRequest(int amountCents, string posRefId, bool suppressMerchantPassword)
         {
             AmountCents = amountCents;
             PosRefId = posRefId;
-            IsSuppressMerchantPassword = isSuppressMerchantPassword;
+            SuppressMerchantPassword = suppressMerchantPassword;
             Id = RequestIdHelper.Id("refund");
         }
 
@@ -448,9 +454,14 @@ namespace SPIClient
             var data = new JObject(
                 new JProperty("refund_amount", AmountCents),
                 new JProperty("pos_ref_id", PosRefId),
-                new JProperty("suppress_merchant_password", IsSuppressMerchantPassword)
+                new JProperty("suppress_merchant_password", SuppressMerchantPassword)
             );
-            Config.addReceiptConfig(data);
+
+            Config.EnabledPrintMerchantCopy = true;
+            Config.EnabledPromptForCustomerCopyOnEftpos = true;
+            Config.EnabledSignatureFlowOnEftpos = true;
+            Config.AddReceiptConfig(data);
+            Options.AddOptions(data);
             return new Message(RequestIdHelper.Id("refund"), Events.RefundRequest, data, true);
         }
     }
@@ -661,15 +672,17 @@ namespace SPIClient
     {
         public string PosRefId { get; }
         public int PurchaseAmount { get; }
-        public int SurchargeAmount { get; }
+        public int SurchargeAmount { get; set; }
+        public bool SuppressMerchantPassword { get; set; }
 
         internal SpiConfig Config = new SpiConfig();
 
-        public MotoPurchaseRequest(int amountCents, string posRefId, int surchargeAmount)
+        internal TransactionOptions Options = new TransactionOptions();
+
+        public MotoPurchaseRequest(int amountCents, string posRefId)
         {
             PosRefId = posRefId;
             PurchaseAmount = amountCents;
-            SurchargeAmount = surchargeAmount;
         }
 
         public Message ToMessage()
@@ -677,9 +690,15 @@ namespace SPIClient
             var data = new JObject(
                 new JProperty("pos_ref_id", PosRefId),
                 new JProperty("purchase_amount", PurchaseAmount),
-                new JProperty("surcharge_amount", SurchargeAmount)
+                new JProperty("surcharge_amount", SurchargeAmount),
+                new JProperty("suppress_merchant_password", SuppressMerchantPassword)
             );
-            Config.addReceiptConfig(data);
+
+            Config.EnabledPrintMerchantCopy = true;
+            Config.EnabledPromptForCustomerCopyOnEftpos = true;
+            Config.EnabledSignatureFlowOnEftpos = true;
+            Config.AddReceiptConfig(data);
+            Options.AddOptions(data);
             return new Message(RequestIdHelper.Id("moto"), Events.MotoPurchaseRequest, data, true);
         }
     }

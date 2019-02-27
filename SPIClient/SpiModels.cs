@@ -121,10 +121,8 @@ namespace SPIClient
         Settle,
         SettlementEnquiry,
         GetLastTransaction,
-
         Preauth,
         AccountVerify
-
     }
 
     /// <summary>
@@ -250,7 +248,7 @@ namespace SPIClient
         /// The id of the last glt request message that was sent. used to match with the response.
         /// </summary>
         public string LastGltRequestId { get; internal set; }
-        
+
         /// <summary>
         /// Whether we're currently attempting to Cancel the transaction.
         /// </summary>
@@ -452,7 +450,12 @@ namespace SPIClient
         /// <summary>
         /// This default stucture works for COM interop.
         /// </summary>
-        public SpiConfig() { }
+        public SpiConfig()
+        {
+            EnabledPrintMerchantCopy = false;
+            EnabledPromptForCustomerCopyOnEftpos = false;
+            EnabledSignatureFlowOnEftpos = false;
+        }
 
         /// <summary>
         /// 
@@ -469,21 +472,24 @@ namespace SPIClient
         /// </summary>
         public bool PrintMerchantCopy { get; set; }
 
-        internal void addReceiptConfig(JObject messageData)
+        internal bool EnabledPromptForCustomerCopyOnEftpos { get; set; }
+        internal bool EnabledSignatureFlowOnEftpos { get; set; }
+        internal bool EnabledPrintMerchantCopy { get; set; }
+
+        internal void AddReceiptConfig(JObject messageData)
         {
-            if (PromptForCustomerCopyOnEftpos)
+            if (PromptForCustomerCopyOnEftpos && EnabledPromptForCustomerCopyOnEftpos)
             {
                 messageData.Add("prompt_for_customer_copy", PromptForCustomerCopyOnEftpos);
             }
-            if (SignatureFlowOnEftpos)
+            if (SignatureFlowOnEftpos && EnabledSignatureFlowOnEftpos)
             {
                 messageData.Add("print_for_signature_required_transactions", SignatureFlowOnEftpos);
             }
-            if (PrintMerchantCopy)
+            if (PrintMerchantCopy && EnabledPrintMerchantCopy)
             {
                 messageData.Add("print_merchant_copy", PrintMerchantCopy);
             }
-
         }
 
         public override string ToString()

@@ -10,15 +10,16 @@ namespace SPIClient
 
         public int CashoutAmount { get; }
 
-        public int SurchargeAmount { get; }
+        public int SurchargeAmount { get; set; }
 
         internal SpiConfig Config = new SpiConfig();
 
-        public CashoutOnlyRequest(int amountCents, string posRefId, int surchargeAmount)
+        internal TransactionOptions Options = new TransactionOptions();
+
+        public CashoutOnlyRequest(int amountCents, string posRefId)
         {
             PosRefId = posRefId;
             CashoutAmount = amountCents;
-            SurchargeAmount = surchargeAmount;
         }
 
         public Message ToMessage()
@@ -28,7 +29,12 @@ namespace SPIClient
                 new JProperty("cash_amount", CashoutAmount),
                 new JProperty("surcharge_amount", SurchargeAmount)
                 );
-            Config.addReceiptConfig(data);
+
+            Config.EnabledPrintMerchantCopy = true;
+            Config.EnabledPromptForCustomerCopyOnEftpos = true;
+            Config.EnabledSignatureFlowOnEftpos = true;
+            Config.AddReceiptConfig(data);
+            Options.AddOptions(data);
             return new Message(RequestIdHelper.Id("cshout"), Events.CashoutOnlyRequest, data, true);
         }
     }
