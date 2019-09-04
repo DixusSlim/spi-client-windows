@@ -2,19 +2,17 @@
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using log4net;
 using RestSharp;
+using Serilog;
 
 namespace SPIClient.Service
 {
     public class HttpBaseService
     {
-        private static readonly ILog Log = LogManager.GetLogger("Http base service");
-
         public DataFormat DataFormat { get; set; }
         private string Url { get; }
         private IRestClient RestClient { get; set; }
-        private readonly TimeSpan _timeOut = TimeSpan.FromSeconds(3);
+        private readonly TimeSpan _timeOut = TimeSpan.FromSeconds(8);
 
         public HttpBaseService(string url)
         {
@@ -35,13 +33,13 @@ namespace SPIClient.Service
             }
             else
             {
-                Log.Info($"Response received from {Url} - {response.Content}");
+                Log.Information($"Response received from {Url} - {response.Content}");
             }
             
             return response;
         }
     }
-
+    
 
 }
 
