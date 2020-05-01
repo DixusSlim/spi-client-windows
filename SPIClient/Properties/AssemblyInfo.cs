@@ -5,9 +5,9 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("SPIClient")]
-[assembly: AssemblyDescription("Client for Assembly Payments Instore Simple Payments Integration (SPI) API")]
+[assembly: AssemblyDescription("Client for mx51 Simple Payments Integration (SPI) API")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Assembly Payments")]
+[assembly: AssemblyCompany("mx51")]
 [assembly: AssemblyProduct("Instore")]
 [assembly: AssemblyCopyright("Copyright ©  2018")]
 [assembly: AssemblyTrademark("")]
@@ -31,5 +31,5 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("2.5.4.*")]
-[assembly: AssemblyInformationalVersion("2.5.4")]
+[assembly: AssemblyVersion("2.5.5.*")]
+[assembly: AssemblyInformationalVersion("2.5.5")]
