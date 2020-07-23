@@ -1,5 +1,4 @@
 using System;
-using System.Net;
 using Serilog;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -30,6 +29,11 @@ namespace SPIClient
     /// Subscribe to this event to know when the Battery level changed
     /// </summary>
     public delegate void SpiBatteryLevelChanged(Message message);
+
+    /// <summary>
+    /// Delegate for transaction update message
+    /// </summary>
+    public delegate void SpiTransactionUpdateMessage(Message message);
 
     /// <summary>
     /// These attributes work for COM interop.
@@ -129,6 +133,17 @@ namespace SPIClient
         public Spi() { }
 
         /// <summary>
+        /// Constructor chaining
+        /// </summary>
+        /// <param name="posId"></param>
+        /// <param name="eftposAddress"></param>
+        /// <param name="secrets"></param>
+        public Spi(string posId, string eftposAddress, Secrets secrets) : this(posId, "", eftposAddress, secrets)
+        {
+            _pairUsingEftposAddress = true;
+        }
+
+        /// <summary>
         /// Create a new Spi instance. 
         /// If you provide secrets, it will start in PairedConnecting status; Otherwise it will start in Unpaired status.
         /// </summary>
@@ -144,7 +159,7 @@ namespace SPIClient
             _eftposAddress = "ws://" + eftposAddress;
 
             // Our stamp for signing outgoing messages
-            _spiMessageStamp = new MessageStamp(_posId, _secrets, TimeSpan.Zero);
+            _spiMessageStamp = new MessageStamp(_posId, _secrets);
             _secrets = secrets;
 
             // We will maintain some state
@@ -241,11 +256,9 @@ namespace SPIClient
         /// </summary>
         public bool SetSerialNumber(string serialNumber)
         {
-            if (CurrentStatus != SpiStatus.Unpaired)
-                return false;
-
             var was = _serialNumber;
             _serialNumber = serialNumber;
+
             if (HasSerialNumberChanged(was))
             {
                 _autoResolveEftposAddress();
@@ -258,7 +271,7 @@ namespace SPIClient
                 }
 
                 CurrentDeviceStatus.DeviceAddressResponseCode = DeviceAddressResponseCode.SERIAL_NUMBER_NOT_CHANGED;
-                _deviceAddressChanged(this, CurrentDeviceStatus);
+                _deviceAddressChanged?.Invoke(this, CurrentDeviceStatus);
             }
 
             return true;
@@ -270,11 +283,9 @@ namespace SPIClient
         /// <returns></returns>
         public bool SetAutoAddressResolution(bool autoAddressResolutionEnable)
         {
-            if (CurrentStatus == SpiStatus.PairedConnected)
-                return false;
-
             var was = _autoAddressResolutionEnabled;
             _autoAddressResolutionEnabled = autoAddressResolutionEnable;
+
             if (autoAddressResolutionEnable && !was)
             {
                 // we're turning it on
@@ -293,9 +304,6 @@ namespace SPIClient
         /// <returns></returns>
         public bool SetTestMode(bool testMode)
         {
-            if (CurrentStatus == SpiStatus.PairedConnected)
-                return false;
-
             if (testMode == _inTestMode)
                 return true;
 
@@ -335,7 +343,7 @@ namespace SPIClient
         /// </summary>
         public bool SetEftposAddress(string address)
         {
-            if (CurrentStatus == SpiStatus.PairedConnected || _autoAddressResolutionEnabled)
+            if (CurrentStatus == SpiStatus.PairedConnected)
                 return false;
 
             _eftposAddress = ""; // reset eftposAddress to give more explicit feedback
@@ -468,8 +476,8 @@ namespace SPIClient
                 // Already confirmed from Eftpos - So all good now. We're Paired also from the POS perspective.
                 Log.Information("Pair Code Confirmed from POS side, and was already confirmed from Eftpos side. Pairing finalised.");
                 _onPairingSuccess();
-                _onReadyToTransact();
             }
+
         }
 
         /// <summary>
@@ -593,6 +601,16 @@ namespace SPIClient
 
             if (tipAmount > 0 && (cashoutAmount > 0 || promptForCashout)) return new InitiateTxResult(false, "Cannot Accept Tips and Cashout at the same time.");
 
+            // no printing available, reset header and footer and disable print
+            if (!TerminalHelper.IsPrinterAvailable(_terminalModel) && _isPrintingConfigEnabled())
+            {
+                options = new TransactionOptions();
+                Config.PromptForCustomerCopyOnEftpos = false;
+                Config.PrintMerchantCopy = false;
+                Config.SignatureFlowOnEftpos = false;
+                Log.Warning("Printing is enabled on a terminal without printer. Printing options will now be disabled.");
+            }
+
             lock (_txLock)
             {
                 if (CurrentFlow != SpiFlow.Idle) return new InitiateTxResult(false, "Not Idle");
@@ -648,6 +666,16 @@ namespace SPIClient
         public InitiateTxResult InitiateRefundTx(string posRefId, int amountCents, bool suppressMerchantPassword, TransactionOptions options)
         {
             if (CurrentStatus == SpiStatus.Unpaired) return new InitiateTxResult(false, "Not Paired");
+
+            // no printing available, reset header and footer and disable print
+            if (!TerminalHelper.IsPrinterAvailable(_terminalModel) && _isPrintingConfigEnabled())
+            {
+                options = new TransactionOptions();
+                Config.PromptForCustomerCopyOnEftpos = false;
+                Config.PrintMerchantCopy = false;
+                Config.SignatureFlowOnEftpos = false;
+                Log.Warning("Printing is enabled on a terminal without printer. Printing options will now be disabled.");
+            }
 
             lock (_txLock)
             {
@@ -792,6 +820,16 @@ namespace SPIClient
         {
             if (CurrentStatus == SpiStatus.Unpaired) return new InitiateTxResult(false, "Not Paired");
 
+            // no printing available, reset header and footer and disable print
+            if (!TerminalHelper.IsPrinterAvailable(_terminalModel) && _isPrintingConfigEnabled())
+            {
+                options = new TransactionOptions();
+                Config.PromptForCustomerCopyOnEftpos = false;
+                Config.PrintMerchantCopy = false;
+                Config.SignatureFlowOnEftpos = false;
+                Log.Warning("Printing is enabled on a terminal without printer. Printing options will now be disabled.");
+            }
+
             lock (_txLock)
             {
                 if (CurrentFlow != SpiFlow.Idle) return new InitiateTxResult(false, "Not Idle");
@@ -864,6 +902,16 @@ namespace SPIClient
         {
             if (CurrentStatus == SpiStatus.Unpaired) return new InitiateTxResult(false, "Not Paired");
 
+            // no printing available, reset header and footer and disable print
+            if (!TerminalHelper.IsPrinterAvailable(_terminalModel) && _isPrintingConfigEnabled())
+            {
+                options = new TransactionOptions();
+                Config.PromptForCustomerCopyOnEftpos = false;
+                Config.PrintMerchantCopy = false;
+                Config.SignatureFlowOnEftpos = false;
+                Log.Warning("Printing is enabled on a terminal without printer. Printing options will now be disabled.");
+            }
+
             lock (_txLock)
             {
                 if (CurrentFlow != SpiFlow.Idle) return new InitiateTxResult(false, "Not Idle");
@@ -905,6 +953,16 @@ namespace SPIClient
         public InitiateTxResult InitiateSettleTx(string posRefId, TransactionOptions options)
         {
             if (CurrentStatus == SpiStatus.Unpaired) return new InitiateTxResult(false, "Not Paired");
+
+            // no printing available, reset header and footer and disable print
+            if (!TerminalHelper.IsPrinterAvailable(_terminalModel) && _isPrintingConfigEnabled())
+            {
+                options = new TransactionOptions();
+                Config.PromptForCustomerCopyOnEftpos = false;
+                Config.PrintMerchantCopy = false;
+                Config.SignatureFlowOnEftpos = false;
+                Log.Warning("Printing is enabled on a terminal without printer. Printing options will now be disabled.");
+            }
 
             lock (_txLock)
             {
@@ -1050,7 +1108,7 @@ namespace SPIClient
         }
 
         /// <summary>
-        /// See GltMatch. VSV-2277 This prevents issue with PosRefId associated with the wrong transaction
+        /// See GltMatch. VSV-2277 This prevents issue with PosRefId associated with the wrong transaction - for purchase only.
         /// </summary>
         /// <param name="gltResponse">The GetLastTransactionResponse message to check</param>
         /// <param name="posRefId">The Reference Id that you passed in with the original request</param>
@@ -1069,7 +1127,7 @@ namespace SPIClient
                 return Message.SuccessState.Unknown;
             }
 
-            if (gltResponse.GetTxType().ToUpper() == "PURCHASE" && gltResponse.GetBankNonCashAmount() != expectedAmount && compare > 0)
+            if (gltResponse.GetTxType().ToUpper() == "PURCHASE" && gltResponse.GetPurchaseAmount() != expectedAmount && compare > 0)
             {
                 return Message.SuccessState.Unknown;
             }
@@ -1085,28 +1143,51 @@ namespace SPIClient
 
         public void PrintReport(string key, string payload)
         {
-            lock (_txLock)
+            if (CurrentStatus == SpiStatus.PairedConnected)
             {
-                _send(new PrintingRequest(key, payload).ToMessage());
+                lock (_txLock)
+                {
+                    _send(new PrintingRequest(key, payload).ToMessage());
+                }
             }
         }
+        #endregion
 
+        #region Device Management Methods
         public void GetTerminalStatus()
         {
-            lock (_txLock)
+            if (CurrentStatus == SpiStatus.PairedConnected)
             {
-                _send(new TerminalStatusRequest().ToMessage());
+                lock (_txLock)
+                {
+                    _send(new TerminalStatusRequest().ToMessage());
+                }
             }
         }
 
         public void GetTerminalConfiguration()
         {
-            lock (_txLock)
+            if (CurrentStatus == SpiStatus.PairedConnected)
             {
-                _send(new TerminalConfigurationRequest().ToMessage());
+                lock (_txLock)
+                {
+                    _send(new TerminalConfigurationRequest().ToMessage());
+                }
             }
         }
 
+        /// <summary>
+        /// Async call to get the current terminal address, this does not update the internals address of the library.
+        /// </summary>
+        /// <returns></returns>
+        public async Task<string> GetTerminalAddress()
+        {
+            var service = new DeviceAddressService();
+            var addressResponse = await service.RetrieveDeviceAddress(_serialNumber, _deviceApiKey, _acquirerCode, _inTestMode);
+            var deviceAddressStatus = DeviceHelper.GenerateDeviceAddressStatus(addressResponse, _eftposAddress);
+
+            return deviceAddressStatus.Address;
+        }
         #endregion
 
         #region Internals for Pairing Flow
@@ -1154,16 +1235,13 @@ namespace SPIClient
             {
                 if (CurrentPairingFlowState.AwaitingCheckFromPos)
                 {
-                    // Still Waiting for User to say yes on POS
-                    Log.Information("Got Pair Confirm from Eftpos, but still waiting for use to confirm from POS.");
-                    CurrentPairingFlowState.Message = "Confirm that the following Code is what the EFTPOS showed";
-                    _pairingFlowStateChanged(this, CurrentPairingFlowState);
+                    // Waiting for PoS, auto confirming code
+                    Log.Information("Confirming pairing from library.");
+                    PairingConfirmCode();
                 }
-                else
-                {
-                    Log.Information("Got Pair Confirm from Eftpos, and already had confirm from POS. Now just waiting for first pong.");
-                    _onPairingSuccess();
-                }
+
+                Log.Information("Got Pair Confirm from Eftpos, and already had confirm from POS. Now just waiting for first pong.");
+                _onPairingSuccess();
 
                 // I need to ping even if the pos user has not said yes yet, 
                 // because otherwise within 5 seconds connection will be dropped by eftpos.
@@ -1632,6 +1710,16 @@ namespace SPIClient
         {
             lock (_txLock)
             {
+                if (_pairUsingEftposAddress)
+                {
+                    var response = new TerminalConfigurationResponse(m);
+                    if (response.isSuccess())
+                    {
+                        _serialNumber = response.GetSerialNumber();
+                        _terminalModel = response.GetTerminalModel();
+                    }
+                }
+
                 TerminalConfigurationResponse?.Invoke(m);
             }
         }
@@ -1642,6 +1730,24 @@ namespace SPIClient
             {
                 BatteryLevelChanged?.Invoke(m);
             }
+        }
+
+        private void _handleTransactionUpdateMessage(Message m)
+        {
+            lock (_txLock)
+            {
+                TransactionUpdateMessage?.Invoke(m);
+            }
+        }
+
+        private bool _isPrintingConfigEnabled()
+        {
+            if (Config.PromptForCustomerCopyOnEftpos || Config.PrintMerchantCopy || Config.SignatureFlowOnEftpos)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         #endregion
@@ -1674,9 +1780,11 @@ namespace SPIClient
 
                 case ConnectionState.Connected:
                     _retriesSinceLastDeviceAddressResolution = 0;
+                    _spiMessageStamp.ResetConnection();
 
                     if (CurrentFlow == SpiFlow.Pairing && CurrentStatus == SpiStatus.Unpaired)
                     {
+
                         CurrentPairingFlowState.Message = "Requesting to Pair...";
                         _pairingFlowStateChanged(this, CurrentPairingFlowState);
                         var pr = PairingHelper.NewPairequest();
@@ -1697,6 +1805,7 @@ namespace SPIClient
                     _mostRecentPongReceived = null;
                     _missedPongsCount = 0;
                     _stopPeriodicPing();
+                    _spiMessageStamp.ResetConnection();
 
                     if (CurrentStatus != SpiStatus.Unpaired)
                     {
@@ -1788,7 +1897,7 @@ namespace SPIClient
                 Thread.CurrentThread.IsBackground = true;
                 while (_conn.Connected && _secrets != null)
                 {
-                    _doPing();
+                    _doPing();// first ping
 
                     Thread.Sleep(_pongTimeout);
                     if (_mostRecentPingSent != null &&
@@ -1848,10 +1957,18 @@ namespace SPIClient
                 }
                 else
                 {
-                    if (!_hasSetInfo) { _callSetPosInfo(); }
+                    if (!_hasSetInfo)
+                    {
+                        _callSetPosInfo();
+                    }
 
                     // let's also tell the eftpos our latest table configuration.
                     _spiPat?.PushPayAtTableConfig();
+
+                    if (_pairUsingEftposAddress)
+                    {
+                        GetTerminalConfiguration();
+                    }
                 }
             }
         }
@@ -1879,6 +1996,7 @@ namespace SPIClient
         private void _doPing()
         {
             var ping = PingHelper.GeneratePingRequest();
+
             _mostRecentPingSent = ping;
             _send(ping);
             _mostRecentPingSentTime = DateTime.Now;
@@ -1890,12 +2008,12 @@ namespace SPIClient
         /// <param name="m"></param>
         private void _handleIncomingPong(Message m)
         {
-            // We need to maintain this time delta otherwise the server will not accept our messages.
-            _spiMessageStamp.ServerTimeDelta = m.GetServerTimeDelta();
-
             if (_mostRecentPongReceived == null)
             {
                 // First pong received after a connection, and after the pairing process is fully finalised.
+                // Receive connection id from PinPad after first pong, store this as this needs to be passed for every request.
+                _spiMessageStamp.SetConnectionId(m.ConnId);
+
                 if (CurrentStatus != SpiStatus.Unpaired)
                 {
                     Log.Information("First pong of connection and in paired state.");
@@ -2037,6 +2155,9 @@ namespace SPIClient
                 case Events.BatteryLevelChanged:
                     _handleBatteryLevelChanged(m);
                     break;
+                case Events.TransactionUpdateMessage:
+                    _handleTransactionUpdateMessage(m);
+                    break;
                 case Events.Error:
                     _handleErrorEvent(m);
                     break;
@@ -2055,7 +2176,7 @@ namespace SPIClient
         }
 
         internal bool _send(Message message)
-        {
+        {   
             var json = message.ToJson(_spiMessageStamp);
             if (_conn.Connected)
             {
@@ -2122,11 +2243,6 @@ namespace SPIClient
             return _serialNumber != updatedSerialNumber;
         }
 
-        private bool HasEftposAddressChanged(string updatedEftposAddress)
-        {
-            return _eftposAddress != updatedEftposAddress;
-        }
-
         private async void _autoResolveEftposAddress()
         {
             if (!_autoAddressResolutionEnabled)
@@ -2139,50 +2255,32 @@ namespace SPIClient
             }
 
             var service = new DeviceAddressService();
-            var addressResponse = await service.RetrieveService(_serialNumber, _deviceApiKey, _acquirerCode, _inTestMode);
+            var addressResponse = await service.RetrieveDeviceAddress(_serialNumber, _deviceApiKey, _acquirerCode, _inTestMode);
+            var deviceAddressStatus = DeviceHelper.GenerateDeviceAddressStatus(addressResponse, _eftposAddress);
+            CurrentDeviceStatus = deviceAddressStatus;
 
-            DeviceAddressStatus CurrentDeviceStatus = new DeviceAddressStatus();
-
-            if (addressResponse.StatusCode == HttpStatusCode.NotFound)
+            if (deviceAddressStatus.DeviceAddressResponseCode == DeviceAddressResponseCode.DEVICE_SERVICE_ERROR)
             {
-                CurrentDeviceStatus.DeviceAddressResponseCode = DeviceAddressResponseCode.INVALID_SERIAL_NUMBER;
-                CurrentDeviceStatus.ResponseStatusDescription = addressResponse.StatusDescription;
-                CurrentDeviceStatus.ResponseMessage = addressResponse.ErrorMessage;
-
-                _deviceAddressChanged(this, CurrentDeviceStatus);
+                Log.Warning("Could not communicate with device address service.");
+                return;
+            }
+            else if (deviceAddressStatus.DeviceAddressResponseCode != DeviceAddressResponseCode.SUCCESS)
+            {
+                Log.Information("Address resolved, but device address has not changed.");
+         
+                // even though address haven't changed - dispatch event as PoS depend on this
+                _deviceAddressChanged?.Invoke(this, CurrentDeviceStatus);
                 return;
             }
 
-            if (addressResponse?.Data?.Address == null)
-            {
-                CurrentDeviceStatus.DeviceAddressResponseCode = DeviceAddressResponseCode.DEVICE_SERVICE_ERROR;
-                CurrentDeviceStatus.ResponseStatusDescription = addressResponse.StatusDescription;
-                CurrentDeviceStatus.ResponseMessage = addressResponse.ErrorMessage;
-
-                _deviceAddressChanged(this, CurrentDeviceStatus);
-                return;
-            }
-
-            if (!HasEftposAddressChanged(addressResponse.Data.Address))
-            {
-                CurrentDeviceStatus.DeviceAddressResponseCode = DeviceAddressResponseCode.ADDRESS_NOT_CHANGED;
-
-                _deviceAddressChanged(this, CurrentDeviceStatus);
-                return;
-            }
-
-            // update device and connection address
-            _eftposAddress = "ws://" + addressResponse.Data.Address;
+            // new address, update device and connection address
+            _eftposAddress = "ws://" + deviceAddressStatus.Address;
             _conn.Address = _eftposAddress;
+            Log.Information($"Address resolved to {deviceAddressStatus.Address}");
 
-            CurrentDeviceStatus = new DeviceAddressStatus
-            {
-                Address = addressResponse.Data.Address,
-                LastUpdated = addressResponse.Data.LastUpdated,
-                DeviceAddressResponseCode = DeviceAddressResponseCode.SUCCESS
-            };
+            // dispatch event
+            _deviceAddressChanged?.Invoke(this, CurrentDeviceStatus);
 
-            _deviceAddressChanged(this, CurrentDeviceStatus);
         }
 
         #endregion
@@ -2213,13 +2311,15 @@ namespace SPIClient
         private string _serialNumber;
         private string _deviceApiKey;
         private string _acquirerCode;
+        private string _terminalModel;
         private bool _inTestMode;
-        private bool _autoAddressResolutionEnabled;
+        private bool _autoAddressResolutionEnabled = true; // enabled by default
         private Secrets _secrets;
         private MessageStamp _spiMessageStamp;
         private string _posVendorId;
         private string _posVersion;
         private bool _hasSetInfo;
+        private bool _pairUsingEftposAddress;
 
         private Connection _conn;
         private readonly TimeSpan _pongTimeout = TimeSpan.FromSeconds(5);
@@ -2236,6 +2336,7 @@ namespace SPIClient
         public SpiTerminalStatusResponse TerminalStatusResponse;
         public SpiTerminalConfigurationResponse TerminalConfigurationResponse;
         public SpiBatteryLevelChanged BatteryLevelChanged;
+        public SpiTransactionUpdateMessage TransactionUpdateMessage;
 
         private Message _mostRecentPingSent;
         private DateTime _mostRecentPingSentTime;

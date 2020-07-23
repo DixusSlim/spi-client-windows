@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -64,6 +64,10 @@ namespace SPIClient
         public const string PayAtTableGetBillDetails = "get_bill_details"; // incoming. When eftpos wants to aretrieve the bill for a table.
         public const string PayAtTableBillDetails = "bill_details";        // outgoing. We reply with this when eftpos requests to us get_bill_details.
         public const string PayAtTableBillPayment = "bill_payment";        // incoming. When the eftpos advices 
+        public const string PayAtTableGetOpenTables = "get_open_tables";
+        public const string PayAtTableOpenTables = "open_tables";
+        public const string PayAtTableBillPaymentFlowEnded = "bill_payment_flow_ended";
+        public const string PayAtTableBillPaymentFlowEndedAck = "bill_payment_flow_ended_ack";
 
         public const string PrintingRequest = "print";
         public const string PrintingResponse = "print_response";
@@ -76,10 +80,8 @@ namespace SPIClient
 
         public const string BatteryLevelChanged = "battery_level_changed";
 
-        public const string PayAtTableGetOpenTables = "get_open_tables";
-        public const string PayAtTableOpenTables = "open_tables";
 
-        public const string PayAtTableBillPaymentFlowEnded = "bill_payment_flow_ended";
+        public const string TransactionUpdateMessage = "txn_update_message";
     }
 
     /// <summary>
@@ -90,13 +92,25 @@ namespace SPIClient
     {
         public string PosId { get; set; }
         public Secrets Secrets { get; set; }
-        public TimeSpan ServerTimeDelta { get; set; }
+        public int PosCounter { get; set; }
+        public string ConnId { get; private set; }
 
-        public MessageStamp(string posId, Secrets secrets, TimeSpan serverTimeDelta)
+        public MessageStamp(string posId, Secrets secrets)
         {
             PosId = posId;
             Secrets = secrets;
-            ServerTimeDelta = serverTimeDelta;
+        }
+
+        internal void ResetConnection()
+        {
+            SetConnectionId("");
+            PosCounter = new Random().Next(100); // pseudo random number starting from 100
+        }
+
+        internal void SetConnectionId(string connId)
+        {
+            if (connId != null)
+                ConnId = connId;
         }
     }
 
@@ -179,6 +193,12 @@ namespace SPIClient
 
         [JsonProperty("datetime")]
         public string DateTimeStamp { get; private set; }
+
+        [JsonProperty("pos_counter")]
+        internal int PosCounter { get; set; }
+
+        [JsonProperty("conn_id")]
+        internal string ConnId { get; set; }
 
         /// <summary>
         /// Pos_id is set here only for outgoing Un-encrypted messages. 
@@ -264,13 +284,6 @@ namespace SPIClient
             return defaultIfNotFound;
         }
 
-        public TimeSpan GetServerTimeDelta()
-        {
-            var now = DateTime.Now;
-            var msgTime = DateTime.Parse(DateTimeStamp);
-            return msgTime - now;
-        }
-
         public static Message FromJson(string msgJson, Secrets secrets)
         {
             var jsonSerializerSettings = new JsonSerializerSettings() { DateParseHandling = DateParseHandling.None };
@@ -296,7 +309,7 @@ namespace SPIClient
                 return new Message("_", Events.InvalidHmacSignature, null, false);
             }
             var decryptedJson = Crypto.AesDecrypt(secrets.EncKeyBytes, env.Enc);
-            //Console.WriteLine("Decrypyted Json: {0}", decryptedJson);
+            
             try
             {
                 var decryptedEnv =
@@ -314,9 +327,9 @@ namespace SPIClient
 
         public string ToJson(MessageStamp stamp)
         {
-            var now = DateTime.Now;
-            var adjustedTime = now.Add(stamp.ServerTimeDelta);
-            DateTimeStamp = adjustedTime.ToString("yyyy-MM-ddTHH:mm:ss.fff");
+            PosCounter = stamp.PosCounter++;
+            ConnId = stamp.ConnId;
+            DateTimeStamp = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff");
 
             if (!_needsEncryption)
             {

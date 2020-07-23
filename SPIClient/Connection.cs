@@ -65,9 +65,9 @@ namespace SPIClient
                 return;
             }
             
-            //Create a new socket instance specifying the url, SPI protocol and Websocket to use.
-            //The will create a TCP/IP socket connection to the provided URL and perform HTTP websocket negotiation
-            _ws = new WebSocket(Address, "spi.2.6.0", WebSocketVersion.Rfc6455);
+            // Create a new socket instance specifying the url, SPI protocol and Websocket to use.
+            // The will create a TCP/IP socket connection to the provided URL and perform HTTP websocket negotiation
+            _ws = new WebSocket(Address, "spi.2.7.0", WebSocketVersion.Rfc6455);
 
             // Setup event handling
             _ws.Opened += _onOpened;
