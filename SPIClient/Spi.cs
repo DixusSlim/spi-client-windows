@@ -1909,7 +1909,7 @@ namespace SPIClient
                             }
 
                             // As we have no way to recover from a reversal in the event of a disconnection, we will fail the reversal.
-                            if (CurrentTxFlowState.Type == TransactionType.Reversal)
+                            if (CurrentFlow == SpiFlow.Transaction && CurrentTxFlowState?.Type == TransactionType.Reversal)
                             {
                                 CurrentTxFlowState.Completed(Message.SuccessState.Failed, null, $"We were in the middle of a reversal when a disconnection happened, let's fail the reversal.");
                                 _txFlowStateChanged(this, CurrentTxFlowState);
@@ -2364,6 +2364,11 @@ namespace SPIClient
             if (deviceAddressStatus.DeviceAddressResponseCode == DeviceAddressResponseCode.DEVICE_SERVICE_ERROR)
             {
                 Log.Warning("Could not communicate with device address service.");
+                return;
+            }
+            else if (deviceAddressStatus.DeviceAddressResponseCode == DeviceAddressResponseCode.INVALID_SERIAL_NUMBER)
+            {
+                Log.Warning("Could not resolve address, invalid serial number.");
                 return;
             }
             else if (deviceAddressStatus.DeviceAddressResponseCode == DeviceAddressResponseCode.ADDRESS_NOT_CHANGED)
