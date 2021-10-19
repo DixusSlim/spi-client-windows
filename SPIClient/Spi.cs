@@ -2083,10 +2083,7 @@ namespace SPIClient
                     // let's also tell the eftpos our latest table configuration.
                     _spiPat?.PushPayAtTableConfig();
 
-                    if (_pairUsingEftposAddress)
-                    {
-                        GetTerminalConfiguration();
-                    }
+                    GetTerminalConfiguration();
                 }
             }
         }
