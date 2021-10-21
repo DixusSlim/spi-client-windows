@@ -363,7 +363,7 @@ namespace SPIClient
             }
 
             _eftposAddress = "ws://" + address;
-            _conn.Address = _eftposAddress;
+            _conn.Address = _getConnectionAddress(_eftposAddress, _tenantCode);
             return true;
         }
 
@@ -1329,6 +1329,24 @@ namespace SPIClient
             _secretsChanged(this, _secrets);
         }
 
+        private string _getConnectionAddress(string address, string tenantCode)
+        {
+            if (String.IsNullOrEmpty(address) || (!String.IsNullOrEmpty(tenantCode) && tenantCode.ToLower().Equals("wbc"))){
+                return address;
+            }
+            else
+            {
+                var splitAddress = address.Split(':');
+                var newAddress = splitAddress[0] + ":" + splitAddress[1];
+                if(splitAddress[0].Equals("ws")){
+                    return newAddress + ":8080";
+                }
+                else{
+                    return newAddress + ":8443";
+                }
+            }    
+        }
+
         #endregion
 
         #region Internals for Transaction Management
@@ -1867,7 +1885,7 @@ namespace SPIClient
         private void _resetConn()
         {
             // Setup the Connection
-            _conn = new Connection { Address = _eftposAddress };
+            _conn = new Connection { Address = _getConnectionAddress(_eftposAddress,_tenantCode) };
             // Register our Event Handlers
             _conn.ConnectionStatusChanged += _onSpiConnectionStatusChanged;
             _conn.MessageReceived += _onSpiMessageReceived;
@@ -2404,7 +2422,7 @@ namespace SPIClient
 
             // new address, update device and connection address
             _eftposAddress = "ws://" + deviceAddressStatus.Address;
-            _conn.Address = _eftposAddress;
+            _conn.Address = _getConnectionAddress(_eftposAddress, _tenantCode);
             Log.Information($"Address resolved to {deviceAddressStatus.Address}");
 
             // dispatch event

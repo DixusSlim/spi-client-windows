@@ -155,5 +155,19 @@ namespace Test
             // assert
             Assert.Equal(sleepBeforeReconnectMs, SpiClientTestUtils.GetInstanceField(typeof(Spi), spi, "_sleepBeforeReconnectMs"));
         }
+
+        [Fact]
+        public void GetConnectionAddress_OnValidAddress_PortAppended()
+        {
+            // arrange
+            const string validEftPosAddress = "ws://192.168.1.10:8080";
+            const string eftPosAddress = "ws://192.168.1.10";
+            const string tenantCode = "gko";
+            Spi spi = new Spi();
+
+            //act
+            Assert.Equal(validEftPosAddress, SpiClientTestUtils.CallInstanceMethod(spi, "_getConnectionAddress",new string[]{ eftPosAddress,tenantCode}));
+            
+        }
     }
 }
