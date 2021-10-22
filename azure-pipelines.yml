@@ -56,14 +56,13 @@ stages:
             packagesToPack: $(Agent.BuildDirectory)/SPIClient/SPIClient/*.csproj
             packDestination: '$(Build.ArtifactStagingDirectory)'
             verbosityPack: Detailed
-            configuration: '$(BUILD_CONFIGURATION)'
 
         # publish intermidiate SPIClient for samples pipeline
         - task: PublishBuildArtifacts@1
           displayName: Publishing artifact
           inputs:
             pathToPublish: $(Build.ArtifactStagingDirectory)
-            artifactName: $(ARIFACT_NAME)
+            artifactName: $(ARTIFACT_NAME)
 
         # build solution
         - task: VSBuild@1
