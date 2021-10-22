@@ -48,6 +48,15 @@ stages:
           inputs:
             restoreSolution: '$(SOLUTION)'
 
+        # build solution
+        - task: VSBuild@1
+          displayName: Build SPIClient
+          inputs:
+            solution: '$(SOLUTION)'
+            vsVersion: '$(BUILD_VERSION_VS)'
+            platform: '$(BUILD_PLATFORM)'
+            configuration: '$(BUILD_CONFIGURATION)'
+
         # pack intermidiate SPIClient for spi samples pipeline
         - task: NuGetCommand@2
           displayName: Package SPIClient
@@ -63,15 +72,6 @@ stages:
           inputs:
             pathToPublish: $(Build.ArtifactStagingDirectory)
             artifactName: $(ARTIFACT_NAME)
-
-        # build solution
-        - task: VSBuild@1
-          displayName: Build SPIClient
-          inputs:
-            solution: '$(SOLUTION)'
-            vsVersion: '$(BUILD_VERSION_VS)'
-            platform: '$(BUILD_PLATFORM)'
-            configuration: '$(BUILD_CONFIGURATION)'
 
         # run visual studio unit tests
         - task: VSTest@2
