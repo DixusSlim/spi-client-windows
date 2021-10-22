@@ -53,7 +53,7 @@ stages:
           displayName: Package SPIClient
           inputs:
             command: 'pack'
-            packagesToPack: $(Agent.BuildDirectory)/SPIClient/SPIClient/*.csproj
+            packagesToPack: $(Agent.BuildDirectory)/SPIClient/*.csproj
             packDestination: '$(Build.ArtifactStagingDirectory)'
             verbosityPack: Detailed
 
