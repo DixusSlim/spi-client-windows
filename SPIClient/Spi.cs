@@ -1338,12 +1338,7 @@ namespace SPIClient
             {
                 var splitAddress = address.Split(':');
                 var newAddress = splitAddress[0] + ":" + splitAddress[1];
-                if(splitAddress[0].Equals("ws")){
-                    return newAddress + ":8080";
-                }
-                else{
-                    return newAddress + ":8443";
-                }
+                return newAddress + ":8080";
             }    
         }
 
